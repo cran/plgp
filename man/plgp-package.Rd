@@ -1,0 +1,48 @@
+\name{plgp-package}
+\alias{plgp-package}
+\docType{package}
+\title{Particle Learning of Gaussian Processes}
+\description{Sequential Monte Carlo inference for fully Bayesian
+  Gaussian process (GP) regression and classification models by
+  particle learning (PL).  The sequential nature of inference
+  and the active learning (AL) hooks provided facilitate thrifty 
+  sequential design (by entropy) and optimization
+  (by improvement) for classification and
+  regression models, respectively.
+  This package essentially provides a generic
+  PL interface, and functions (arguments to the interface) which
+  implement the GP models and AL heuristics.  Functions for 
+  a special, linked, regression/classification GP model and 
+  an integrated expected conditional improvement (IECI) statistic 
+  is provides for optimization in the presence of unknown constraints.
+  See the examples section of ?plgp and demo(package="plgp") 
+  for an index of examples}
+\details{
+For a fuller overview including a complete list of functions, demos and
+vignettes, please use \code{help(package="plgp")}.
+}
+\author{
+Robert B. Gramacy \email{bobby@statslab.cam.ac.uk}
+}
+\references{
+  
+  Gramacy, R. and Polson, N. (2010).
+  \dQuote{Particle learning of Gaussian process models for
+    sequential design and optimization.}
+  Tech. Rep. arXiv:0909.5262, University of Cambridge.
+  
+  Gramacy, R. and Lee, H. (2010).
+  \dQuote{Optimization under unknown constraints}.
+  \emph{Bayesian Statistics 9}, J. M. Bernardo, M. J. Bayarri,
+  J. O. Berger, A. P. Dawid, D. Heckerman, A. F. M. Smith and M. West
+  (Eds.); Oxford University Press
+  
+  Carvalho, C., Johannes, M., Lopes, H., and Polson, N. (2008).
+  \dQuote{Particle Learning and Smoothing}.
+  Discussion Paper 2008-32, Duke University Dept. of Statistical
+  Science.
+
+  \url{http://www.statslab.cam.ac.uk/~bobby/plgp.html}
+}
+\keyword{ package }
+\seealso{ \code{\link{PL}}, \pkg{tgp} }

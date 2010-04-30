@@ -1,0 +1,54 @@
+\name{plgp-internal}
+%% Part of the sensible export list but (currently?) documented as
+%% internal (or waiting for documentation to be written):
+%% <LIST>
+\alias{calc.ecis}
+\alias{calc.eis}
+\alias{calc.ents}
+\alias{calc.ieci}
+\alias{calc.iecis}
+\alias{calc.ktKik.x}
+\alias{calc2.ktKik.x}
+\alias{covar}
+\alias{covar.sep}
+\alias{cv.folds}
+\alias{dist2covar.symm}
+\alias{distance}
+\alias{EI}
+\alias{ei.adapt}
+\alias{entropy}
+\alias{entropy.adapt}
+\alias{entropy.bvsb}
+\alias{findmin.ConstGP}
+\alias{findmin.GP}
+\alias{hist.particle.params}
+\alias{ieci.adapt}
+\alias{ieci.const.adapt}
+\alias{ieci.ConstGP}
+\alias{ieci.GP}
+\alias{lpost.GP}
+\alias{PL.clear}
+\alias{pred.mean.GP}
+\alias{resample}
+\alias{tquants}
+\alias{unif.propose.pos}
+\alias{updat.GP}
+\alias{util.GP}
+\alias{renorm.weights}
+\alias{renorm.lweights}
+\alias{latents.CGP}
+\alias{pall}
+\alias{peach}
+\alias{psave}
+\alias{Xcand}
+\alias{phist}
+
+\title{Internal Monomvn Functions}
+\description{
+  Internal plgp functions
+}
+\details{
+  These are not to be called by the user (or in some cases are just
+  waiting for proper documentation to be written :))
+}
+\keyword{ internal }

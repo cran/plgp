@@ -1,0 +1,8 @@
+plgp_sin1d		reg-GPs on 1-d sin data 
+plgp_exp_ei     	AL/EI with reg-GPs on 2-d exp data
+plgp_1d_ieci    	AL/IECI with reg-GPs on 1-d data
+plcgp_exp		class-GPs on 2-d exp data
+plcgp_cush      	class-GPs on Ripley's Cushings data
+plcgp_exp_entropy	AL/entropy with class-GPs on 2-d exp data
+plconstgp_1d_ieci	AL/IECI with const-GPs on 1-d data
+plconstgp_2d_ieci	AL/IECI with const-GPs on 2-d data
