@@ -21,7 +21,7 @@ formals(data.GP)$X <- Xs
 formals(data.GP)$Y <- Ys
 
 ## default prior
-prior <- prior.GP(2, "isotropic")
+prior <- prior.GP(1, "isotropic")
 
 ## set up starting and ending times:
 ## by sepcifying start = end we can do Metropolis-Hastings

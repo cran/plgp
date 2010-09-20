@@ -77,6 +77,31 @@ void covar_sep(const int col, double **X1, const int n1, double **X2,
 
 
 /*
+ * covar_sim:
+ *
+ * calculate the correlation (K) between X1 and X2 with 
+ * an sim power exponential correlation function 
+ * with index d and nugget g
+ */
+
+void covar_sim(const int col, double **X1, const int n1, double **X2,
+	       const int n2, double *d, double g, double **K)
+{
+  int i, j, k;
+
+  /* calculate the covariance */
+  for(i=0; i<n1; i++) {
+    for(j=0; j<n2; j++) {
+      K[i][j] = 0.0;
+      for(k=0; k<col; k++) K[i][j] += d[k] * (X1[i][k] - X2[j][k]);
+      if(K[i][j] == 0.0) K[i][j] = 1.0 + g;
+      else K[i][j] = exp(0.0 - sq(K[i][j]));
+    }
+  }
+}
+
+
+/*
  * covar_sep_symm:
  *
  * calculate the correlation (K) between X1 and X2 with 
@@ -96,6 +121,32 @@ void covar_sep_symm(const int col, double **X, const int n,
       K[i][j] = 0.0;
       for(k=0; k<col; k++) K[i][j] += sq(X[i][k] - X[j][k])/d[k];
       K[i][j] = exp(0.0 - K[i][j]);
+      K[j][i] = K[i][j];
+    }
+  }
+}
+
+
+/*
+ * covar_sim_symm:
+ *
+ * calculate the correlation (K) between X1 and X2 with 
+ * an sim power exponential correlation function 
+ * with index d and nugget g
+ */
+
+void covar_sim_symm(const int col, double **X, const int n, 
+		    double *d, const double g, double **K)
+{
+  int i, j, k;
+
+  /* calculate the covariance */
+  for(i=0; i<n; i++) {
+    K[i][i] = 1.0 + g;
+    for(j=i+1; j<n; j++) {
+      K[i][j] = 0.0;
+      for(k=0; k<col; k++) K[i][j] += d[k] * (X[i][k] - X[j][k]);
+      K[i][j] = exp(0.0 - sq(K[i][j]));
       K[j][i] = K[i][j];
     }
   }
@@ -259,6 +310,42 @@ void covar_sep_R(int *col_in, double *X1_in, int *n1_in, double *X2_in,
 
 
 /*
+ * covar_sim_R:
+ *
+ * function for calculating a covariance matrix (K) using a
+ * sim power expoential covariance function with index
+ * d[col] and nugget g
+ */
+
+void covar_sim_R(int *col_in, double *X1_in, int *n1_in, double *X2_in, 
+		 int *n2_in, double *d_in, double *g_in, double *K_out)
+{
+  int col, n1, n2;
+  double **X1, **X2, **K;
+  double g;
+
+  /* copy integers */
+  col = *col_in;
+  n1 = *n1_in;
+  n2 = *n2_in;
+  g = *g_in;
+
+  /* make matrix bones */
+  X1 = new_matrix_bones(X1_in, n1, col);
+  X2 = new_matrix_bones(X2_in, n2, col);
+  K = new_matrix_bones(K_out, n1, n2);
+
+  /* calculate the covariance */
+  covar_sim(col, X1, n1, X2, n2, d_in, g, K);
+
+  /* clean up */
+  free(X1);
+  free(X2);
+  free(K);
+}
+
+
+/*
  * covar_sep_symm_R:
  *
  * function for calculating a symmetric covariance matrix (K) using 
@@ -284,6 +371,39 @@ void covar_sep_symm_R(int *col_in, double *X_in, int *n_in, double *d_in,
 
   /* calculate the covariance */
   covar_sep_symm(col, X, n, d_in, g, K);
+
+  /* clean up */
+  free(X);
+  free(K);
+}
+
+
+/*
+ * covar_sim_symm_R:
+ *
+ * function for calculating a symmetric covariance matrix (K) using 
+ * a sim power expoential covariance function with index 
+ * d[col] and nugget g
+ */
+
+void covar_sim_symm_R(int *col_in, double *X_in, int *n_in, double *d_in, 
+		      double *g_in, double *K_out)
+{
+  int col, n;
+  double **X, **K;
+  double g;
+
+  /* copy integers */
+  col = *col_in;
+  n = *n_in;
+  g = *g_in;
+
+  /* make matrix bones */
+  X = new_matrix_bones(X_in, n, col);
+  K = new_matrix_bones(K_out, n, n);
+
+  /* calculate the covariance */
+  covar_sim_symm(col, X, n, d_in, g, K);
 
   /* clean up */
   free(X);

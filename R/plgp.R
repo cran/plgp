@@ -64,14 +64,18 @@ propagate.GP <- function(z, Zt, prior)
 ##
 ## default prior specification for the GP model
 
-prior.GP <- function(m, cov=c("isotropic", "separable"))
+prior.GP <- function(m, cov=c("isotropic", "separable", "sim"))
   {
     cov <- match.arg(cov)
-    prior <- list(bZero=FALSE, s2p=c(0,0), grate=20)
+    prior <- list(bZero=FALSE, s2p=c(0,0), grate=20, cov=cov)
     if(cov == "isotropic") prior$drate <- 5
     else {
       if(m == 1) stop("use isotropic when m=1")
       prior$drate <- rep(5, m)
+      if(cov == "sim") {
+        prior$bZero <- TRUE
+        prior$drate <- sqrt(1/prior$drate)
+      }
     }
     return(prior)
   }
@@ -91,6 +95,19 @@ unif.propose.pos <- function(x, l=3, h=4)
 }
 
 
+## mvnorm.propose.rw
+##
+## random walk multivariate normal proposal for the
+## sim index parameter for the sim covariance function
+
+mvnorm.propose.rw <- function(x, cov=diag(0.2, length(x)))
+  {
+    
+    x.new <- rmvnorm(1, mean=x, sigma=cov)
+    return(list(x=x.new, lfwd=0, lbak=0))
+  }
+
+
 ## draw.GP:
 ##
 ## MH-style draw for the range (d) and nugget (g) parameters
@@ -105,13 +122,21 @@ draw.GP <- function(Zt, prior, l=3, h=4, thin=10, Y=NULL)
     ## determine which Y to use
     if(is.null(Y)) Y <- pall$Y
     else Zt <- updat.GP(Zt, prior, Y)
+
+    ## increase thin in sim case
+    if(prior$cov == "sim") thin <- thin * length(Zt$d)
     
     ## take thin draws from the posterior
     for(i in 1:thin) {
       
       ## propose a change to d
-      d.new <- unif.propose.pos(Zt$d, l, h)
-      if(all(d.new$x > 0)) {
+      if(prior$cov == "sim") {
+        d.new <- mvnorm.propose.rw(Zt$d)
+        d.new$x <- d.new$x * sample(c(-1,1), length(d.new$x), replace=TRUE)
+      } else d.new <- unif.propose.pos(Zt$d, l, h)
+
+      ## accept or reject
+      if(all(d.new$x != 0)) {
         Zt.prop <- init.GP(prior, d.new$x, Zt$g, Y)
         
         ## accept or reject d-change via MH
@@ -150,7 +175,7 @@ lpost.GP <- function(n, m, Vb, phi, ldetK, d, g, prior)
     s2p <- prior$s2p
     
     ## deal with the prior (uniform in the range)
-    lp <- sum(dexp(d, rate=prior$drate, log=TRUE))
+    lp <- sum(dexp(abs(d), rate=prior$drate, log=TRUE))
     lp <- lp + dexp(g, rate=prior$grate, log=TRUE)
     
     ## deal with the (integrated) likelihood part
@@ -198,7 +223,12 @@ init.GP <- function(prior, d=NULL, g=NULL, Y=NULL)
     if(is.null(Y)) Y <- pall$Y
 
     ## defaults from prior
-    if(is.null(d)) d <- 1/prior$drate
+    if(is.null(d)) {
+      d <- 1/prior$drate
+      ## perhaps negate some for sim cov
+      if(prior$cov == "sim")
+        d <- d * sample(c(-1,1), length(d), replace=TRUE)
+    }
     if(is.null(g)) g <- 1/prior$grate
 
     ## initialize particle parameters
@@ -240,12 +270,15 @@ pred.GP <- function(XX, Zt, prior, Y=NULL, quants=FALSE,
     tdf <- Zt$t - m - 1
 
     ## utility for calculations below
-    if(length(Zt$d) == 1) { ## isotropic
+    if(prior$cov == "isotropic") { ## isotropic
       k <- covar(X1=pall$X[sub,], X2=XX, d=Zt$d, g=0)
       kk <- drop(covar(X1=XX, d=Zt$d, g=Zt$g))
-    } else { ## separable
+    } else if(prior$cov == "separable") { ## separable
       k <- covar.sep(X1=pall$X[sub,], X2=XX, d=Zt$d, g=0)
       kk <- drop(covar.sep(X1=XX, d=Zt$d, g=Zt$g))
+    } else { ## sim (rank 1)
+      k <- covar.sim(X1=pall$X[sub,], X2=XX, d=Zt$d, g=0)
+      kk <- drop(covar.sim(X1=XX, d=Zt$d, g=Zt$g))
     }
 
     ## utility for calculations below
@@ -311,10 +344,12 @@ ieci.GP <- function(Xcand, Xref, Zt, prior, Y=NULL, w=NULL, verb=1)
     util <- util.GP(Zt, prior, Y, retKi=TRUE)
 
     ## utility for calculations below
-    if(length(Zt$d) == 1) { ## separable
+    if(prior$cov == "isotropic") { ## isotropic
       k <- covar(X1=pall$X, X2=Xref, d=Zt$d, g=0)#g=Zt$g)
-    } else { ## isotropic
+    } else if(prior$cov == "separable") { ## separable
       k <- covar.sep(X1=pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
+    } else { ## sim (rank 1)
+      k <- covar.sim(X1=pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
     }
 
     ## build up the K quantities
@@ -369,11 +404,12 @@ params.GP <- function()
   {
     ## allocate a data frame for the params
     P <- length(peach)
-    d <- g <- lpost <- rep(NA, P)
+    g <- lpost <- rep(NA, P)
+    d <- matrix(NA, ncol=length(peach[[1]]$d), nrow=P)
     
     ## collect the parameters from the particles
     for(p in 1:P) {
-      d[p] <- mean(peach[[p]]$d)
+      d[p,] <- peach[[p]]$d
       g[p] <- peach[[p]]$g
       lpost[p] <- peach[[p]]$lpost
     }
@@ -465,11 +501,13 @@ util.GP <- function(Zt, prior, Y=NULL, sub=1:Zt$t, ldetK=FALSE, retKi=TRUE)
     if(is.null(Y)) Y <- pall$Y
     
     ## calculate the covariance matrix
-    if(length(Zt$d) == 1) { ## isotropic
+    if(prior$cov == "isotropic") { ## isotropic
       if(is.null(pall$D)) pall$D <<- distance(pall$X)
       K <- dist2covar.symm(D=pall$D[sub,sub], d=Zt$d, g=Zt$g)
-    } else { ## separable
+    } else if(prior$cov == "separable") { ## separable
       K <- covar.sep(X1=pall$X[sub,], d=Zt$d, g=Zt$g)
+    } else { ## sim (rank 1)
+      K <- covar.sim(X1=pall$X[sub,], d=Zt$d, g=Zt$g)      
     }
 
     ## Ki <- K^{-1}
@@ -623,8 +661,8 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
           points(x[,1], x[,2], pch=18, col="green")
         } else { ## 1-d data
           o <- order(drop(Xcand))
-          plot(drop(Xcand[o,]), as[o], type="l", xlab="x", ylab="AS stat",
-               main="AS surface")
+          plot(drop(Xcand[o,]), as[o], type="l", lwd=2,
+               xlab="x", ylab="AS stat", main="AS surface")
           points(drop(rectunscale(pall$X, rect)), rep(min(as), nrow(pall$X)))
           points(x, min(as), pch=18, col="green")
           points(xstar, min(as), pch=17, col="blue")
@@ -660,18 +698,21 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
 ## calculate the predictive mean given the util
 ## structure for the particle and range and nuggets
 
-pred.mean.GP <- function(x, util, dparam, gparam)
+pred.mean.GP <- function(x, util, cov, dparam, gparam)
   {
     ## coerse the XX input
     XX <- matrix(x, ncol=ncol(pall$X))
 
     ## calculate covariance vectors and matrices
-    if(length(dparam) == 1) { ## isotropic
+    if(cov == "isotropic") { ## isotropic
       k <- covar(X1=pall$X, X2=XX, d=dparam, g=0)
       kk <- drop(covar(X1=XX, d=dparam, g=gparam))
-    } else { ## separable
+    } else if(cov == "separable") { ## separable
       k <- covar.sep(X1=pall$X, X2=XX, d=dparam, g=0)
       kk <- drop(covar.sep(X1=XX, d=dparam, g=gparam))
+    } else { ## sim (rank 1)
+      k <- covar.sim(X1=pall$X, X2=XX, d=dparam, g=0)
+      kk <- drop(covar.sim(X1=XX, d=dparam, g=gparam))
     }
     
     ## calculate predictive quantities using Ki
@@ -711,6 +752,6 @@ findmin.GP <- function(xstart, prior)
     ## call the optim function
     xstar <- optim(xstart, pred.mean.GP, method="L-BFGS-B",
                    lower=rep(0,m), upper=rep(1,m), util=util,
-                   dparam=Zt$d, gparam=Zt$g)$par
+                   cov=prior$cov, dparam=Zt$d, gparam=Zt$g)$par
     return(xstar)
   }

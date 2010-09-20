@@ -74,7 +74,7 @@ PL <- function(data, start, end, init, lpredprob, propagate, prior=NULL,
                cont=FALSE, verb=1)
   {
     ## calculate the starting (initalization)
-    if(start > end) stop("no PL to do since start >= end")
+    ## if(start >= end) stop("no PL to do since start >= end")
 
     ## initialize if not picking up where we left off
     if(!cont) {

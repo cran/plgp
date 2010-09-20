@@ -16,10 +16,10 @@
   an integrated expected conditional improvement (IECI) statistic 
   is provides for optimization in the presence of unknown constraints.
   See the examples section of ?plgp and demo(package="plgp") 
-  for an index of examples}
+  for an index of demos}
 \details{
-For a fuller overview including a complete list of functions, demos and
-vignettes, please use \code{help(package="plgp")}.
+For a fuller overview including a complete list of functions, and
+demos, please use \code{help(package="plgp")}.
 }
 \author{
 Robert B. Gramacy \email{bobby@statslab.cam.ac.uk}

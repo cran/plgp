@@ -80,7 +80,7 @@ propagate.CGP <- function(z, Zt, prior)
 ##
 ## default prior specification for the CGP model
 
-prior.CGP <- function(m, cov=c("isotropic", "separable"))
+prior.CGP <- function(m, cov=c("isotropic", "separable", "sim"))
   {
     cov <- match.arg(cov)
     prior <- list(bZero=TRUE, s2p=c(5,40), grate=20)
@@ -88,6 +88,10 @@ prior.CGP <- function(m, cov=c("isotropic", "separable"))
     else {
       if(m == 1) stop("use isotropic when m=1")
       prior$drate <- rep(5, m)
+      if(cov == "sim") {
+        prior$bZero <- TRUE
+        prior$drate <- sqrt(1/prior$drate)
+      }
     }
     return(prior)
   }

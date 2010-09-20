@@ -147,6 +147,67 @@ covar.sep <- function(X1=NULL, X2=NULL, d, g)
   }
 
 
+## covar.sim:
+##
+## calculate the sim covarance matrix betteen the rows
+## of X1 and X2 with index parameter d and nugget g
+
+covar.sim <- function(X1=NULL, X2=NULL, d, g)
+  { 
+    ## coerse arguments and extract dimensions
+    if(!is.matrix(X1)) {
+      if(is.null(X2)) stop("X2 cannot be NULL in this context")
+      m <- ncol(X2)
+      X1 <- matrix(X1, ncol=m)
+    } else m <- ncol(X1)
+    n1 <- nrow(X1)
+
+    ## check d and g arguments
+    if(length(d) != m) stop("bad d argument")
+    if(length(g) != 1) stop("bad g argument")
+
+    if(is.null(X2)) {
+
+      ## calculate K
+      outK <- .C("covar_sim_symm_R",
+                 col = as.integer(m),
+                 X = as.double(t(X1)),
+                 n = as.integer(n1),
+                 d = as.double(d),
+                 g = as.double(g),
+                 K = double(n1 * n1),
+                 PACKAGE="plgp")
+      
+      ## return the covariance matrix
+      return(matrix(outK$K, ncol=n1, byrow=TRUE))
+      
+    } else {
+    
+      ## check inputs
+      if(ncol(X1) != ncol(X2)) stop("col dim mismatch for X1 & X2")
+      
+      ## coerse arguments and extract dimensions
+      X2 <- as.matrix(X2)
+      n2 <- nrow(X2)
+      
+      ## calculate K
+      outK <- .C("covar_sim_R",
+                 col = as.integer(m),
+                 X1 = as.double(t(X1)),
+                 n1 = as.integer(n1),
+                 X2 = as.double(t(X2)),
+                 n2 = as.integer(n2),
+                 d = as.double(d),
+                 g = as.double(g),
+                 K = double(n1 * n2),
+                 PACKAGE="plgp")
+      
+      ## return the covariance matrix
+      return(matrix(outK$K, ncol=n2, byrow=TRUE))
+    }
+  }
+
+
 ## dist2covar.symm:
 ##
 ## given a distance matrix, convert it into a

@@ -1,4 +1,4 @@
-## Active Learning for classification Gaussian Processes
+## Classification Gaussian Processes
 ## on a simple 2-d exponential function
 
 ## load the necessary libraries

@@ -12,9 +12,9 @@
   models
 }
 \usage{
-prior.GP(m, cov = c("isotropic", "separable"))
-prior.CGP(m, cov = c("isotropic", "separable"))
-prior.ConstGP(m, cov.GP = c("isotropic", "separable"),
+prior.GP(m, cov = c("isotropic", "separable", "sim"))
+prior.CGP(m, cov = c("isotropic", "separable", "sim"))
+prior.ConstGP(m, cov.GP = c("isotropic", "separable", "sim"),
               cov.CGP = cov.GP)
 }
 %- maybe also 'usage' for other objects documented here.
@@ -26,7 +26,8 @@ prior.ConstGP(m, cov.GP = c("isotropic", "separable"),
   \item{cov}{
     whether to use an \code{"isotropic"} or \code{"separable"} power
     exponential correlation function with power 2 -- nugget included;
-    applies to both regression and classification GPs
+    a single index model (\code{"sim"}) capability is provided as \dQuote{beta}
+    functionality; applies to both regression and classification GPs
   }
   \item{cov.GP}{
     specifies the covariance for the real-valued response in the

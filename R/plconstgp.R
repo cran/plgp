@@ -73,7 +73,7 @@ propagate.ConstGP <- function(z, Zt, prior)
 ## default prior specifications for the CGP model and
 ## the GP model
 
-prior.ConstGP <- function(m, cov.GP=c("isotropic", "separable"), cov.CGP=cov.GP)
+prior.ConstGP <- function(m, cov.GP=c("isotropic", "separable", "sim"), cov.CGP=cov.GP)
   {
     prior <- list(GP=prior.GP(m, cov.GP), CGP=prior.CGP(m, cov.CGP))
     return(prior)
@@ -265,6 +265,8 @@ data.ConstGP.improv <- function(begin, end=NULL, f, rect, prior,
           points(drop(rectunscale(pall$X, rect)), rep(min(as), nrow(pall$X)))
           points(x, min(as), pch=18, col="green")
           points(xstar, min(as), pch=17, col="blue")
+          legend("topright", c("chosen point", "oracle candidate"),
+                 pch=c(18,17), col=c("green", "blue"), bty="n")
         }
       }
 
@@ -340,7 +342,7 @@ findmin.ConstGP <- function(xstart, prior)
     ## call the optim function
     xstar <- optim(xstart, pred.mean.GP, method="L-BFGS-B",
                    lower=rep(0,m), upper=rep(1,m), util=util,
-                   dparam=Zt$d, gparam=Zt$g)$par
+                   cov=util$GP$cov, dparam=Zt$d, gparam=Zt$g)$par
     return(xstar)
   }
       

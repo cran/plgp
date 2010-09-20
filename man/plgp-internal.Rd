@@ -11,6 +11,7 @@
 \alias{calc2.ktKik.x}
 \alias{covar}
 \alias{covar.sep}
+\alias{covar.sim}
 \alias{cv.folds}
 \alias{dist2covar.symm}
 \alias{distance}
@@ -32,6 +33,7 @@
 \alias{resample}
 \alias{tquants}
 \alias{unif.propose.pos}
+\alias{mvnorm.propose.rw}
 \alias{updat.GP}
 \alias{util.GP}
 \alias{renorm.weights}
@@ -43,9 +45,9 @@
 \alias{Xcand}
 \alias{phist}
 
-\title{Internal Monomvn Functions}
+\title{Internal plgp Functions}
 \description{
-  Internal plgp functions
+  Internal \pkg{plgp} functions
 }
 \details{
   These are not to be called by the user (or in some cases are just
