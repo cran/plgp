@@ -30,7 +30,7 @@ exp2d.C(X, threed = TRUE)
   generates the first (-) and second (+) classes in a three-class
   function. A third class label (the default) may
   created from the first one where
-  \code{X[,1] > 0} (Gramacy \& Polson, 2010)
+  \code{X[,1] > 0} (Gramacy \& Polson, 2011)
 }
 \value{
   A vector of class labels of length \code{nrow(X)} is returned
@@ -41,15 +41,16 @@ exp2d.C(X, threed = TRUE)
     categorical inputs with treed Gaussian process models.} Tech.
   rep., University of Cambridge. ArXiv:0904.4891.
   
-  Gramacy, R. and Polson, N. (2010).
+ Gramacy, R. and Polson, N. (2011).
   \dQuote{Particle learning of Gaussian process models for
     sequential design and optimization.}
-  Tech. Rep. arXiv:0909.5262, University of Cambridge.
+  Journal of Computational and Graphical Statistics, 20(1), 
+  pp. 102-118; arXiv:0909.5262
   
-  \url{http://www.statslab.cam.ac.uk/~bobby/plgp.html}
+  \url{http://faculty.chicagobooth.edu/robert.gramacy/plgp.html}
 }
 \author{
-Robert B. Gramacy, \email{bobby@statslab.cam.ac.uk}
+Robert B. Gramacy, \email{rbgramacy@chicagobooth.edu}
 }
 \examples{
 ## The following demos use this data

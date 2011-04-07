@@ -104,10 +104,12 @@ data.ConstGP.improv(begin, end = NULL, f, rect, prior,
 }
 
 \references{
-   Gramacy, R. and Polson, N. (2010).
+
+ Gramacy, R. and Polson, N. (2011).
   \dQuote{Particle learning of Gaussian process models for
     sequential design and optimization.}
-  Tech. Rep. arXiv:0909.5262, University of Cambridge.
+  Journal of Computational and Graphical Statistics, 20(1), 
+  pp. 102-118; arXiv:0909.5262
 
   Gramacy, R. and Lee, H. (2010).
   \dQuote{Optimization under unknown constraints}.
@@ -115,11 +117,11 @@ data.ConstGP.improv(begin, end = NULL, f, rect, prior,
   J. O. Berger, A. P. Dawid, D. Heckerman, A. F. M. Smith and M. West
   (Eds.); Oxford University Press
 
-  \url{http://www.statslab.cam.ac.uk/~bobby/plgp.html}
+  \url{http://faculty.chicagobooth.edu/robert.gramacy/plgp.html}
 }
 
 \author{
-Robert B. Gramacy, \email{bobby@statslab.cam.ac.uk}
+Robert B. Gramacy, \email{rbgramacy@chicagobooth.edu}
 }
 
 \seealso{

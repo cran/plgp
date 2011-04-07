@@ -15,6 +15,8 @@
   a special, linked, regression/classification GP model and 
   an integrated expected conditional improvement (IECI) statistic 
   is provides for optimization in the presence of unknown constraints.
+  Separable and isotropic Gaussian, and single-index correlation
+  functions are supported.
   See the examples section of ?plgp and demo(package="plgp") 
   for an index of demos}
 \details{
@@ -22,14 +24,15 @@ For a fuller overview including a complete list of functions, and
 demos, please use \code{help(package="plgp")}.
 }
 \author{
-Robert B. Gramacy \email{bobby@statslab.cam.ac.uk}
+Robert B. Gramacy \email{rbgramacy@chicagobooth.edu}
 }
 \references{
   
-  Gramacy, R. and Polson, N. (2010).
+ Gramacy, R. and Polson, N. (2011).
   \dQuote{Particle learning of Gaussian process models for
     sequential design and optimization.}
-  Tech. Rep. arXiv:0909.5262, University of Cambridge.
+  Journal of Computational and Graphical Statistics, 20(1), 
+  pp. 102-118; arXiv:0909.5262
   
   Gramacy, R. and Lee, H. (2010).
   \dQuote{Optimization under unknown constraints}.
@@ -42,7 +45,7 @@ Robert B. Gramacy \email{bobby@statslab.cam.ac.uk}
   Discussion Paper 2008-32, Duke University Dept. of Statistical
   Science.
 
-  \url{http://www.statslab.cam.ac.uk/~bobby/plgp.html}
+  \url{http://faculty.chicagobooth.edu/robert.gramacy/plgp.html}
 }
 \keyword{ package }
 \seealso{ \code{\link{PL}}, \pkg{tgp} }

@@ -60,10 +60,12 @@ draw.ConstGP(Zt, prior, l = 3, h = 4, thin = 10)
   These functions return an updated particle \code{Zt}
 }
 \references{
-    Gramacy, R. and Polson, N. (2010).
+
+ Gramacy, R. and Polson, N. (2011).
   \dQuote{Particle learning of Gaussian process models for
     sequential design and optimization.}
-  Tech. Rep. arXiv:0909.5262, University of Cambridge.
+  Journal of Computational and Graphical Statistics, 20(1), 
+  pp. 102-118; arXiv:0909.5262
 
   Gramacy, R. and Lee, H. (2010).
   \dQuote{Optimization under unknown constraints}.
@@ -71,10 +73,10 @@ draw.ConstGP(Zt, prior, l = 3, h = 4, thin = 10)
   J. O. Berger, A. P. Dawid, D. Heckerman, A. F. M. Smith and M. West
   (Eds.); Oxford University Press
 
-  \url{http://www.statslab.cam.ac.uk/~bobby/plgp.html}
+  \url{http://faculty.chicagobooth.edu/robert.gramacy/plgp.html}
 }
 \author{
-Robert B. Gramacy, \email{bobby@statslab.cam.ac.uk}
+Robert B. Gramacy, \email{rbgramacy@chicagobooth.edu}
 }
 \seealso{
   \code{\link{init.GP}}, \code{\link{propagate.GP}},
