@@ -49,7 +49,16 @@ prior.ConstGP(m, cov.GP = c("isotropic", "separable", "sim"),
   for regression and classification GP models, respectively
 }
 \value{
-  a valid prior object for the appropriate GP model
+  a valid prior object for the appropriate GP model;
+
+  By making the output \code{$drate} and/or \code{$grate}
+  values negative causes the corresponding lengthscale \code{d}
+  parameter(s) and nugget \code{d} parameter to be fixed at the
+  reciprocal of their absolute values, respectively.  This effectively
+  turns off inference for these values, and allows one to study the GP
+  predictive distribution as a function of fixed values.  When both
+  are fixed it is sensible to use only one particle (\code{P=1}, as an
+  argument to \code{\link{PL}}) 
 }
 \references{
 

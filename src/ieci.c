@@ -115,6 +115,32 @@ double calc_ieci(const int m, double *ktKik, double *s2p, const double phi,
 
 
 /*
+ * calc_alc:
+ *
+ * function that iterates over the m Xref locations, and the
+ * stats calculated by previous calc_* function in order to 
+ * calculate the reduction in variance
+ */
+
+double calc_alc(const int m, double *ktKik, double *s2p, const double phi, 
+		const double g, double *badj, const double tdf, double *w)
+{
+  int i;
+  double zphi, ts2, alc;
+
+  alc = 0.0;
+  for(i=0; i<m; i++) {
+    zphi = (s2p[1] + phi)*(1.0 + g - ktKik[i]);
+    ts2 = badj[i] * zphi / (s2p[0] + tdf);
+    if(w) alc += w[i]*tdf*ts2/(tdf-2.0);
+    else alc += ts2;
+  }
+
+  return (alc/m);
+}
+
+
+/*
  * calc_g_mui_kxy:
  *
  * function for calculating the g vector, mui scalar, and
@@ -481,13 +507,92 @@ void calc_iecis_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
 
 
 /*
+ * calc_alcs_R:
+ *
+ * function for calculating the ALCs at all candidate locations
+ * Xcand, with reference to loactions in Xref -- R interface; 
+ * stores the output in vector alc_out
+ */
+
+
+void calc_alcs_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
+		  double *Xcand_in, int *I_in, int *col_in, double *X_in, 
+		  double *Ki_in, double *Xref_in, double *d_in, int *dlen_in, 
+		  double *g_in, double *s2p_in, double *phi_in, double *badj_in, 
+		  int *tdf_in, double *w_in, int *verb_in, double *alc_out)
+{
+  int m, n, col, dlen, I, i;
+  double **X, **Xcand, **Xref, **k, **Ki;
+  double *gvec, *kxy, *ktKikx;
+  double mui;
+
+  mui = 0;
+  
+  /* copy integers */
+  m = *m_in;
+  n = *n_in;
+  col = *col_in;
+  dlen = *dlen_in;
+  I = *I_in;
+
+  /* make matrix bones */
+  X = new_matrix_bones(X_in, n, col);
+  Ki = new_matrix_bones(Ki_in, n, n);
+  Xcand = new_matrix_bones(Xcand_in, I, col);
+  Xref = new_matrix_bones(Xref_in, m, col);
+  k = new_matrix_bones(k_in, m, n);  
+
+  /* allocate g, kxy, and ktKikx vectors */
+  gvec = new_vector(n);
+  kxy = new_vector(m);
+  ktKikx = new_vector(m);
+
+  /* calculate the ALC for each candidate */
+  for(i=0; i<I; i++) {
+
+    /* progress meter */
+    if(*verb_in > 1)
+      myprintf(stdout, "calculating ALC for point %d of %d\n", i, I);
+    
+    /* calculate the g vector, mui, and kxy */
+    calc_g_mui_kxy(col, Xcand[i], X, n, Ki, Xref, m, d_in, 
+		   dlen, *g_in, gvec, &mui, kxy);
+
+    /* skip if numerical problems */
+    if(mui <= sqrt(DOUBLE_EPS)) {
+      alc_out[i] = 1e300 * 1e300;
+      continue;
+    }
+
+    /* use g, mu, and kxy to calculate ktKik.x */
+    calc_ktKikx(ktKik_in, m, k, n, gvec, mui, kxy, ktKikx);
+    
+    /* calculate the IECI */
+    alc_out[i] = calc_alc(m, ktKikx, s2p_in, *phi_in, *g_in, badj_in, 
+			   *tdf_in, w_in);
+  }
+
+  /* clean up */
+  free(ktKikx);
+  free(gvec);
+  free(kxy);
+  free(X);
+  free(Xcand);
+  free(Ki);
+  free(Xref);
+  free(k);
+}
+
+
+/*
  * calc_eis_R:
  *
  * R interface function for calculating EI over many sets of
  * predictive (t) distributions in tmat
  */
 
-void calc_eis_R(double *tmat_in, int *n_in, double *fmin_in, double *eis_out)
+void calc_eis_R(double *tmat_in, int *n_in, double *fmin_in, 
+		double *w_in, double *eis_out)
 {
   int n, i;
   double **tmat;
@@ -500,8 +605,10 @@ void calc_eis_R(double *tmat_in, int *n_in, double *fmin_in, double *eis_out)
   /* make matrix bones */
   tmat = new_matrix_bones(tmat_in, n, 3);
 
-  for(i=0; i<n; i++) 
+  for(i=0; i<n; i++)
     eis_out[i] = EI(tmat[i][0], tmat[i][1], tmat[i][2], fmin);
+ 
+  if(w_in) for(i=0; i<n; i++) eis_out[i] *= w_in[i];
 
   /* clean up */
   free(tmat);

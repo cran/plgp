@@ -83,7 +83,7 @@ propagate.CGP <- function(z, Zt, prior)
 prior.CGP <- function(m, cov=c("isotropic", "separable", "sim"))
   {
     cov <- match.arg(cov)
-    prior <- list(bZero=TRUE, s2p=c(5,40), grate=20)
+    prior <- list(bZero=TRUE, s2p=c(5,40), grate=20, cov=cov)
     if(cov == "isotropic") prior$drate <- 5
     else {
       if(m == 1) stop("use isotropic when m=1")

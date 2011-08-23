@@ -49,7 +49,7 @@ resample <- function(z, lpredprob, prior)
     ## resample particle indices according to the weighst
     indices <- sample(1:P, P, prob=weights, replace=TRUE)
     Pnew <- length(unique(indices))
-    if(Pnew == 1) stop("total degeneration")
+    if(P > 1 && Pnew == 1) stop("total degeneration")
     ## cat("unique particles ", Pnew, "\n")
 
     ## re-allocate the list of particles according to

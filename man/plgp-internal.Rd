@@ -7,6 +7,8 @@
 \alias{calc.ents}
 \alias{calc.ieci}
 \alias{calc.iecis}
+\alias{calc.alcs}
+\alias{calc.vars}
 \alias{calc.ktKik.x}
 \alias{calc2.ktKik.x}
 \alias{covar}
@@ -24,9 +26,15 @@
 \alias{findmin.GP}
 \alias{hist.particle.params}
 \alias{ieci.adapt}
+\alias{alc.adapt}
+\alias{mindist.adapt}
+\alias{var.adapt}
 \alias{ieci.const.adapt}
+\alias{alc.const.adapt}
 \alias{ieci.ConstGP}
+\alias{alc.ConstGP}
 \alias{ieci.GP}
+\alias{alc.GP}
 \alias{lpost.GP}
 \alias{PL.clear}
 \alias{pred.mean.GP}

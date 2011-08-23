@@ -125,7 +125,7 @@ pred.ConstGP <- function(XX, Zt, prior, quants=TRUE)
   }
 
 
-## pred.ConstGP:
+## ieci.ConstGP:
 ##
 ## combining the predict functions of GP and CGP
 
@@ -142,7 +142,7 @@ ieci.ConstGP <- function(Xcand, Zt, prior, Y=NULL, verb=1)
     outp <- pred.GP(XX=Xcand, Zt=Zt[[1]], prior=prior$GP, Y=pall$Y, quants=FALSE)
 
     ## add in the EI part
-    ieci <- mean(calc.eis(outp, min(outp$m))) - ieci
+    ieci <- mean(calc.eis(outp, min(outp$m), pc2)) - ieci
 
     ## zero out any negative ones (could be -Inf if numerical problems in C)
     ieci[ieci < 0] <- 0
@@ -152,6 +152,33 @@ ieci.ConstGP <- function(Xcand, Zt, prior, Y=NULL, verb=1)
     
     ## return the EI adjusted IECI
     return(ieci)
+  }
+
+
+## alc.ConstGP:
+##
+## combining the predict functions of GP and CGP
+
+alc.ConstGP <- function(Xcand, Zt, prior, Y=NULL, verb=1)
+  {
+    ## calculate the predictive probably of the constraint
+    ## violation at Xcand under the CGP
+    pc2 <- pred.CGP(XX=Xcand, Zt=Zt, prior=prior$CGP, cs=2)
+
+    ## and then caluclate ieci adjusting for pc2
+    alc <- alc.GP(Xcand=Xcand, Xref=Xcand, Zt[[1]], prior$GP, Y, w=pc2, verb)
+
+    ## calculate in the EI part
+    outp <- pred.GP(XX=Xcand, Zt=Zt[[1]], prior=prior$GP, Y=pall$Y, quants=FALSE)
+
+    ## add in the ALC part
+    alc <- mean(calc.vars(outp, pc2)) - alc
+
+    ## zero out any negative ones (could be -Inf if numerical problems in C)
+    alc[alc < 0] <- 0
+
+    ## return the VAR adjusted ALC
+    return(alc)
   }
 
 
@@ -228,7 +255,8 @@ addpall.ConstGP <- function(Z)
 ## satisfies the constraint
 
 data.ConstGP.improv <- function(begin, end=NULL, f, rect, prior,
-                                cands=40, save=TRUE, verb=2)
+                                adapt=ieci.const.adapt, cands=40, save=TRUE, 
+                                oracle=TRUE, verb=2)
   {
     if(!is.null(end) && begin > end) stop("must have begin <= end")
     else if(is.null(end) || begin == end) { ## adaptive sample
@@ -237,12 +265,14 @@ data.ConstGP.improv <- function(begin, end=NULL, f, rect, prior,
       Xcand <- lhs(cands, rect)
 
       ## add a cleverly chosen candidate
-      xstars <- findmin.ConstGP(pall$X[nrow(pall$X),], prior)
-      xstar <- drop(rectunscale(rbind(xstars), rect))
-      Xcand <- rbind(Xcand, xstar)
+      if(oracle) {
+        xstars <- findmin.ConstGP(pall$X[nrow(pall$X),], prior)
+        xstar <- drop(rectunscale(rbind(xstars), rect))
+        Xcand <- rbind(Xcand, xstar)
+      }
       
       ## calculate the index with the best IECI
-      as <- ieci.const.adapt(Xcand, rect, prior, verb)
+      as <- adapt(Xcand, rect, prior, verb)
       indx <- which.max(as)
       
       ## return the new adaptive sample
@@ -256,7 +286,7 @@ data.ConstGP.improv <- function(begin, end=NULL, f, rect, prior,
           image(interp(Xcand[,1], Xcand[,2], as))
           points(rectunscale(pall$X, rect))
           points(Xcand, pch=18)
-          points(xstar[1], xstar[2], pch=17, col="blue")
+          if(oracle) points(xstar[1], xstar[2], pch=17, col="blue")
           points(x[,1], x[,2], pch=18, col="green")
         } else { ## 1-d data
           o <- order(drop(Xcand))
@@ -264,7 +294,7 @@ data.ConstGP.improv <- function(begin, end=NULL, f, rect, prior,
                xlab="x", ylab="constrained IECI")
           points(drop(rectunscale(pall$X, rect)), rep(min(as), nrow(pall$X)))
           points(x, min(as), pch=18, col="green")
-          points(xstar, min(as), pch=17, col="blue")
+          if(oracle) points(xstar, min(as), pch=17, col="blue")
           legend("topright", c("chosen point", "oracle candidate"),
                  pch=c(18,17), col=c("green", "blue"), bty="n")
         }
@@ -272,7 +302,7 @@ data.ConstGP.improv <- function(begin, end=NULL, f, rect, prior,
 
       ## maybe save the max log IECI and xstar
       if(save) {
-        psave$xstar <<- rbind(psave$xstar, xstar)
+        if(oracle) psave$xstar <<- rbind(psave$xstar, xstar)
         psave$max.as <<- c(psave$max.as, max(as))
       }
 
@@ -319,6 +349,34 @@ ieci.const.adapt <- function(Xcand, rect, prior, verb)
     ## return the candidate with the most potential
     ## ieci is negated inside ieci.ConstGP
     return(ieci/length(iecis))
+  }
+
+
+## alc.const.adapt:
+##
+## return the index into Xcand that has the most potential to
+## improve reduce the variance via ALC with constraint probabilities
+
+alc.const.adapt <- function(Xcand, rect, prior, verb)
+  {
+    ## calculate the average maximum entropy point
+    if(verb > 0)
+      cat("taking design point ", nrow(pall$X)+1, " by constained ALC\n", sep="")
+
+    ## adjust the candidates (X) and reference locations (Xref)
+    Xcands <- rectscale(Xcand, rect)
+
+    ## get predictive distribution information
+    alcs <- papply(Xcand=Xcands, fun=alc.ConstGP, prior=prior,
+                             verb=verb, pre="   ALC")
+
+    ## gather the entropy info for each x averaged over
+    alc <- rep(0, nrow(Xcands))
+    for(p in 1:length(alcs)) alc <- alc + alcs[[p]]
+
+    ## return the candidate with the most potential
+    ## ALC is negated inside alc.ConstGP
+    return(alc/length(alcs))
   }
 
 

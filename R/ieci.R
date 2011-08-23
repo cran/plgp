@@ -27,7 +27,7 @@
 ## wrapper used to calculate the ECIs (expected conditional improvements)
 ## in C, and then calculate the IECI by a (weighted) mean
 
-calc.eis <- function(tmat, fmin)
+calc.eis <- function(tmat, fmin, w)
   {
     n <- nrow(tmat)
 
@@ -35,8 +35,20 @@ calc.eis <- function(tmat, fmin)
               tmat = as.double(t(tmat)),
               n = as.integer(n),
               fmin = as.double(fmin),
+              w = as.double(w),
               eis = double(n),
               PACKAGE="plgp")$eis)
+  }
+
+
+## calc.vars:
+##
+## wrapper used to calculate the predictive variances
+
+calc.vars <- function(tmat, w=NULL)
+  {
+    if(is.null(w)) return(tmat$df*tmat$s2/(tmat$df-2))
+    else return(w*tmat$df*tmat$s2/(tmat$df-2))
   }
 
 
@@ -71,6 +83,41 @@ calc.iecis <- function(ktKik, k, Xcand, X, Ki, Xref, d, g, s2p, phi,
               tm = as.double(tm),
               tdf = as.integer(tdf),
               fmin = as.double(fmin),
+              w = as.double(w),
+              verb = as.integer(verb),
+              iecis = double(I),
+              PACKAGE="plgp")$iecis)
+  }
+
+
+## calc.alcs:
+##
+## wrapper used to calculate the ALCs in C
+
+calc.alcs <- function(ktKik, k, Xcand, X, Ki, Xref, d, g, s2p, phi,
+                       badj, tdf, w, verb)
+  {
+    m <- length(ktKik)
+    I <- nrow(Xcand)
+
+    return(.C("calc_alcs_R",
+              ktKik = as.double(ktKik),
+              m = as.integer(m),
+              k = as.double(k),
+              n = as.integer(nrow(k)),
+              Xcand = as.double(t(Xcand)),
+              I = as.integer(I),
+              col = as.integer(ncol(Xcand)),
+              X = as.double(t(X)),
+              Ki = as.double(Ki),
+              Xref = as.double(t(Xref)),
+              d = as.double(d),
+              dlen = as.integer(length(d)),
+              g = as.double(g),
+              s2p = as.double(s2p),
+              phi = as.double(phi),
+              badj = as.double(badj),
+              tdf = as.integer(tdf),
               w = as.double(w),
               verb = as.integer(verb),
               iecis = double(I),

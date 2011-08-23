@@ -118,6 +118,7 @@ draw.GP <- function(Zt, prior, l=3, h=4, thin=10, Y=NULL)
   {
     ## perhaps initialize instead of draw
     if(is.null(Zt)) return(init.GP(prior=prior))
+    if(prior$drate < 0 && prior$grate < 0) return(Zt)
     
     ## determine which Y to use
     if(is.null(Y)) Y <- pall$Y
@@ -128,23 +129,27 @@ draw.GP <- function(Zt, prior, l=3, h=4, thin=10, Y=NULL)
     
     ## take thin draws from the posterior
     for(i in 1:thin) {
-      
-      ## propose a change to d
-      if(prior$cov == "sim") {
-        d.new <- mvnorm.propose.rw(Zt$d)
-        d.new$x <- d.new$x * sample(c(-1,1), length(d.new$x), replace=TRUE)
-      } else d.new <- unif.propose.pos(Zt$d, l, h)
 
-      ## accept or reject
-      if(all(d.new$x != 0)) {
-        Zt.prop <- init.GP(prior, d.new$x, Zt$g, Y)
+      ## check if sampling d
+      if(prior$drate > 0) {
+      ## propose a change to d
+        if(prior$cov == "sim") {
+          d.new <- mvnorm.propose.rw(Zt$d)
+          d.new$x <- d.new$x * sample(c(-1,1), length(d.new$x), replace=TRUE)
+        } else d.new <- unif.propose.pos(Zt$d, l, h)
         
-        ## accept or reject d-change via MH
-        if(runif(1) < exp(Zt.prop$lpost + d.new$lbak - Zt$lpost - d.new$lfwd))
-          Zt <- Zt.prop
-      }    
+        ## accept or reject
+        if(all(d.new$x != 0)) {
+          Zt.prop <- init.GP(prior, d.new$x, Zt$g, Y)
+          
+          ## accept or reject d-change via MH
+          if(runif(1) < exp(Zt.prop$lpost + d.new$lbak - Zt$lpost - d.new$lfwd))
+            Zt <- Zt.prop
+        }
+      }
 
       ## propose a change to g
+      if(prior$grate < 0) next; ## skip if freezing nugget
       g.new <- unif.propose.pos(Zt$g, l, h)
       if(all(g.new$x > 0)) {
         Zt.prop <- init.GP(prior, Zt$d, g.new$x, Y)
@@ -175,8 +180,9 @@ lpost.GP <- function(n, m, Vb, phi, ldetK, d, g, prior)
     s2p <- prior$s2p
     
     ## deal with the prior (uniform in the range)
-    lp <- sum(dexp(abs(d), rate=prior$drate, log=TRUE))
-    lp <- lp + dexp(g, rate=prior$grate, log=TRUE)
+    lp <- 0
+    if(prior$grate > 0) lp <- lp + sum(dexp(abs(d), rate=prior$drate, log=TRUE))
+    if(prior$grate > 0) lp <- lp + dexp(g, rate=prior$grate, log=TRUE)
     
     ## deal with the (integrated) likelihood part
     lp <- lp + 0.5* (det(Vb, log=TRUE) - (n-m)*log(2*pi))
@@ -224,12 +230,12 @@ init.GP <- function(prior, d=NULL, g=NULL, Y=NULL)
 
     ## defaults from prior
     if(is.null(d)) {
-      d <- 1/prior$drate
+      d <- abs(1/prior$drate)
       ## perhaps negate some for sim cov
       if(prior$cov == "sim")
         d <- d * sample(c(-1,1), length(d), replace=TRUE)
     }
-    if(is.null(g)) g <- 1/prior$grate
+    if(is.null(g)) g <- abs(1/prior$grate)
 
     ## initialize particle parameters
     Zt <- list(d=d, g=g)
@@ -373,11 +379,62 @@ ieci.GP <- function(Xcand, Xref, Zt, prior, Y=NULL, w=NULL, verb=1)
     ieci <- calc.iecis(ktKik, k, Xcand, pall$X, util$Ki, Xref, Zt$d, Zt$g,
                        prior$s2p, util$phi, badj, tm, tdf, fmin, w, verb)
 
-    ## sanity checkx
+    ## sanity checks
     if(any(is.nan(ieci))) stop("NaN in ieci")
     
     ## return the df
     return(ieci)
+  }
+
+
+## alc.GP:
+##
+## use the 1-step-ahead predictive equations to calculate
+## the alc statistic under a GP model.  
+
+alc.GP <- function(Xcand, Xref, Zt, prior, Y=NULL, w=NULL, verb=1)
+  {
+    ## get the right Y
+    if(is.null(Y)) Y <- pall$Y
+    
+    ## coerse the Xcand & Xref input
+    Xcand <- matrix(Xcand, ncol=ncol(pall$X))
+    Xref <- matrix(Xref, ncol=ncol(pall$X))
+
+    ## predictive degrees of freedom
+    if(prior$bZero) m <- 0
+    else m <- ncol(pall$X)
+    tdf <- Zt$t - m - 1
+    util <- util.GP(Zt, prior, Y, retKi=TRUE)
+
+    ## utility for calculations below
+    if(prior$cov == "isotropic") { ## isotropic
+      k <- covar(X1=pall$X, X2=Xref, d=Zt$d, g=0)#g=Zt$g)
+    } else if(prior$cov == "separable") { ## separable
+      k <- covar.sep(X1=pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
+    } else { ## sim (rank 1)
+      k <- covar.sim(X1=pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
+    }
+
+    ## build up the K quantities
+    ktKi <- t(k) %*% util$Ki
+    ktKik <- diag(ktKi %*% k)
+    ktKiYmFbmu <- drop(ktKi %*% util$YmFbmu)
+    if(any(!is.finite(ktKiYmFbmu))) stop("bad ktKiYmFbmu")
+
+    ## initial steps in the predictive variance calculation
+    FF <- cbind(1,Xref)
+    badj <- 1 + diag(FF %*% util$Vb %*% t(FF))  ## could be simplified further
+    
+    ## IECI calculation for each entry in Xcand
+    alc <- calc.alcs(ktKik, k, Xcand, pall$X, util$Ki, Xref, Zt$d, Zt$g,
+                     prior$s2p, util$phi, badj, tdf, w, verb)
+    
+    ## sanity checks
+    if(any(is.nan(alc))) stop("NaN in alc")
+    
+    ## return the df
+    return(alc)
   }
 
 
@@ -572,7 +629,7 @@ ei.adapt <- function(Xcand, rect, prior, verb)
 
     ## stale candidates
     Xcands <- rectscale(Xcand, rect)
-    
+
     ## get predictive distribution information
     outp <- papply(XX=Xcands, fun=pred.GP, prior=prior, verb=verb)
 
@@ -589,7 +646,37 @@ ei.adapt <- function(Xcand, rect, prior, verb)
   }
 
 
-## icei.adapt:
+## var.adapt:
+##
+## return the index into Xcand that has the largest variance
+
+var.adapt <- function(Xcand, rect, prior, verb)
+  {
+    ## calculate the average maximum entropy point
+    if(verb > 0)
+      cat("taking design point ", nrow(pall$X)+1, " by EI\n", sep="")
+
+    ## stale candidates
+    Xcands <- rectscale(Xcand, rect)
+    
+    ## get predictive distribution information
+    outp <- papply(XX=Xcands, fun=pred.GP, prior=prior, verb=verb)
+
+    ## gather the predictive variance info
+    m <- m2 <- v <- rep(0, nrow(as.matrix(Xcand)))
+    for(p in 1:length(outp)) {
+      m2 <- m2 + outp[[p]]$m^2
+      m <- m + outp[[p]]$m
+      v <- v + outp[[p]]$df*outp[[p]]$s2/(outp[[p]]$df - 2)
+    }
+
+    ## return the candidate with the most potential
+    n <- length(outp)
+    return(list(m=m/n, v=v/n + m2/n - (m/n)^2))
+  }
+
+
+## icei.adapt
 ##
 ## return the index into Xcand that has the most potential to
 ## improve the estimate of the minimum via integrated expected conitional
@@ -622,50 +709,119 @@ ieci.adapt <- function(Xcand, rect, prior, verb, Xref=NULL, fun=ieci.GP)
   }
 
 
+## alc.adapt:
+##
+## return the index into Xcand that has the most potential to
+## improve predictive variance at reference locations
+
+alc.adapt <- function(Xcand, rect, prior, verb, Xref=NULL, fun=alc.GP)
+  {
+    ## calculate the average maximum entropy point
+    if(verb > 0)
+      cat("taking design point ", nrow(pall$X)+1, " by ALC\n", sep="")
+
+    ## adjust the candidates (X) and reference locations (Xref)
+    Xcands <- rectscale(Xcand, rect)
+    if(is.null(Xref)) Xrefs <- Xcands
+    else Xrefs <- rectscale(Xref, rect)
+
+    ## get predictive distribution information
+    alcs <- papply(Xcand=Xcands, Xref=Xrefs, fun=fun, prior=prior, verb=verb)
+
+    ## gather the entropy info for each x averaged over
+    alc <- rep(0, nrow(Xcands))
+    for(p in 1:length(alcs)) alc <- alc + alcs[[p]]
+
+    ## calculate mean vars to in order to make a better progress meter
+    mvar <- mean(var.adapt(Xref, rect, prior, verb=0)$v)
+
+    ## return the candidate with the most potential
+    return(mvar-alc/length(alcs))
+    ##return(-alc/length(alcs))
+  }
+
+
+## mindist.adapt:
+##
+## return the index into Xcand that is the minimum distance
+## from Xref
+
+mindist.adapt <- function(Xcand, rect, prior, verb, Xref)
+  {
+    ## calculate the average maximum entropy point
+    if(verb > 0)
+      cat("taking design point ", nrow(pall$X)+1, " by mindist\n", sep="")
+
+    ## check Xref should be length 1
+    if(nrow(Xref) != 1) stop("Xref should have one vector")
+    
+    ## adjust the candidates (X) and reference locations (Xref)
+    Xcands <- rectscale(Xcand, rect)
+    if(is.null(Xref)) Xrefs <- Xcands
+    else Xrefs <- rectscale(Xref, rect)
+
+    ## calculate distances
+    D <- 1/distance(Xrefs, Xcands)
+
+    ## return the candidate with the most potential
+    return(D)
+  }
+
+
 ## data.GP.improv:
 ##
-## use the current state of the particales to calculate
+## use the current state of the particles to calculate
 ## the next adaptive sample from the posterior predictive
 ## distribution based on the expected improvement
+##
+## THIS FUNCTION SHOULD BE BROKEN IN TWO -- ONE FOR OPTIMIZATION
+## AND ONE FOR LOCAL DESIGN WITH APLEY
 
 data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
-                           cands=40, save=TRUE, verb=2)
+                           cands=40, save=TRUE, oracle=TRUE, verb=2)
   {
     if(!is.null(end) && begin > end) stop("must have begin <= end")
     else if(is.null(end) || begin == end) { ## adaptive sample
 
       ## choose some adaptive sampling candidates
-      Xcand <- lhs(cands, rect)
+      if(is.na(cands)) Xc <- Xcand
+      else Xc <- lhs(cands, rect)
 
-      ## add a cleverly chosen candidate
-      xstars <- findmin.GP(pall$X[nrow(pall$X),], prior)
-      xstar <- drop(rectunscale(rbind(xstars), rect))
-      Xcand <- rbind(Xcand, xstar)
+      if(oracle) {  ## add a cleverly chosen candidate
+        xstars <- findmin.GP(pall$X[nrow(pall$X),], prior)
+        xstar <- drop(rectunscale(rbind(xstars), rect))
+        Xc <- rbind(Xc, xstar)
+      } else { ## calculate the predictive variance of the reference location
+        mv <- var.adapt(formals(adapt)$Xref, rect, prior, verb=0)
+      }
 
       ## calculate the index with the best entropy reduction potential
-      as <- adapt(Xcand, rect, prior, verb)
+      as <- adapt(Xc, rect, prior, verb)
       indx <- which.max(as)
       
       ## return the new adaptive sample
-      x <- matrix(Xcand[indx,], nrow=1)
+      x <- matrix(Xc[indx,], nrow=1)
       xs <- rectscale(x, rect)
 
+      ## possibly remove the candidate from a fixed set
+      if(is.na(cands)) Xcand <<- Xcand[-indx,]
+      
       ## maybe plot something
       if(verb > 1) {
         par(mfrow=c(1,1))
-        if(ncol(Xcand) > 1) { ## 2-d+ data
-          image(interp(Xcand[,1], Xcand[,2], as), main="AS surface")
+        if(ncol(Xc) > 1 && nrow(pall$X) > 10) { ## 2-d+ data
+          image(interp(Xc[,1], Xc[,2], as), main="AS surface")
           points(rectunscale(pall$X, rect))
-          points(Xcand, pch=18)
-          points(xstar[1], xstar[2], pch=17, col="blue")
+          points(Xc, pch=18)
+          if(oracle) points(xstar[1], xstar[2], pch=17, col="blue")
           points(x[,1], x[,2], pch=18, col="green")
-        } else { ## 1-d data
-          o <- order(drop(Xcand))
-          plot(drop(Xcand[o,]), as[o], type="l", lwd=2,
+        } else if(ncol(Xc) == 1){ ## 1-d data
+          o <- order(drop(Xc))
+          plot(drop(Xc[o,]), as[o], type="l", lwd=2,
                xlab="x", ylab="AS stat", main="AS surface")
           points(drop(rectunscale(pall$X, rect)), rep(min(as), nrow(pall$X)))
           points(x, min(as), pch=18, col="green")
-          points(xstar, min(as), pch=17, col="blue")
+          if(oracle) points(xstar, min(as), pch=17, col="blue")
           legend("topright", c("chosen point", "oracle candidate"),
                  pch=c(18,17), col=c("green", "blue"), bty="n")
         }
@@ -673,7 +829,11 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
 
       ## maybe save the max log EI or IECI
       if(save) {
-        psave$xstar <<- rbind(psave$xstar, xstar)
+        if(oracle) psave$xstar <<- rbind(psave$xstar, xstar)
+        else {
+          psave$vref <<- rbind(psave$vref, mv$v)
+          psave$mref <<- rbind(psave$mref, mv$m)
+        }
         psave$max.as <<- c(psave$max.as, max(as))
       }
 
@@ -682,9 +842,16 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
 
     } else {  ## create an initial design
 
-      ## calculate a LHS 
-      if(verb > 0) cat("initializing with size", end-begin+1, "LHS\n")
-      X <- lhs(end-begin+1, rect)
+      ## MED from a subset when cands is NULL, uses global Xcand
+      if(is.na(cands)) {
+        if(verb > 0) cat("initializing with size", end-begin+1, "MED\n")
+        out <- dopt.gp(end-begin+1, X=NULL, Xcand=Xcand)
+        X <- out$XX
+        Xcand <<- Xcand[-out$fi,]
+      }  else {  ## calculate a LHS 
+        if(verb > 0) cat("initializing with size", end-begin+1, "LHS\n")
+        X <- lhs(end-begin+1, rect)
+      }
       
       ## get the class labels
       Y <- f(X)

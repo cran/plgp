@@ -17,13 +17,14 @@
 data.GP(begin, end = NULL, X, Y)
 data.GP.improv(begin, end = NULL, f, rect, prior,
                adapt = ei.adapt, cands = 40,
-               save = TRUE, verb = 2)
+               save = TRUE, oracle = TRUE, verb = 2)
 data.CGP(begin, end = NULL, X, C)
 data.CGP.adapt(begin, end = NULL, f, rect, prior,
                cands = 40, verb = 2)
 data.ConstGP(begin, end = NULL, X, Y, C)
 data.ConstGP.improv(begin, end = NULL, f, rect, prior,
-                   cands = 40, save = TRUE, verb = 2)
+                    adapt = ieci.const.adapt , cands = 40, 
+                    save = TRUE, oracle = TRUE, verb = 2)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -78,6 +79,11 @@ data.ConstGP.improv(begin, end = NULL, f, rect, prior,
     scalar \code{logical} indicating if the improvment information for
     chosen candidate should be saved in the \code{psave} global variable
   }
+  \item{oracle}{
+  scalar \code{logical} indicating if the candidates should be
+  augmented with the point found to maximize the predictive surface
+  (with a search starting at the most recently chosen input)
+ }
   \item{verb}{
     verbosity level for printing the progress of improv and other
     adaptive sampling calculations
