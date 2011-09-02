@@ -1,14 +1,14 @@
-3d064975574587e129e3cd0b81445c8a *ChangeLog
-f541844ca37cf02e3c4f9da0a0bba4fb *DESCRIPTION
+c0a0c24b07510cd5806db00273c0bab3 *ChangeLog
+281cff06dc2f8ea4cf209a7c6f95fa07 *DESCRIPTION
 70cba641d3fa0622a20805e7e5820d14 *LICENSE
 90820e6ac3e7a5cc8b8450bfd47b2668 *R/covar.R
 58b3fba028ac3a3fac56d2df38cdcc8d *R/entropy.R
 d1499adf5d4482a31ee470b202228c3a *R/exp2d_class.R
-0ffcf449697cf75d45ba69f179990c1b *R/ieci.R
+eb0659c824c6661c510a01141526253e *R/ieci.R
 b576aca5727df2a18586973b819f278d *R/pl.R
 683605d64453a97ccc43ee6f3e283a9f *R/plcgp.R
 ff3f2d7cccb4c8e74c88e89551eaf89a *R/plconstgp.R
-2c8c01fbd61586d41f81ab8e09d8ea58 *R/plgp.R
+8bc0f61111c286d67fdb724233a90d8f *R/plgp.R
 5fd31883d8746d9c098a8b20979842f7 *R/zzz.R
 ee9a9bfb8cafae2134d592ac408078db *demo/00Index
 7ecc79d60ace727444f036c74f7b4eb6 *demo/plcgp_cush.R
@@ -17,7 +17,7 @@ ba8a0d948094db8bd9524d379037b37d *demo/plcgp_exp_entropy.R
 f2333f4c4e3222f9296c0335e625d3c6 *demo/plconstgp_1d_ieci.R
 bc138e93fefa41b2f88cd097c20eb3c9 *demo/plconstgp_2d_ieci.R
 f656b0d95de0272cb2e04481313fbf67 *demo/plgp_1d_ieci.R
-472e50a31aaaef6029e57aead30b1332 *demo/plgp_exp_ei.R
+b9fdddb2e36b1ac237538cc30dae707e *demo/plgp_exp_ei.R
 c62c56b496e91d25d1c506c5d3cc7b7f *demo/plgp_sin1d.R
 48b8c7926927d0e7a86645daee82701b *man/PL.Rd
 53e58df55db14dc4a9f87e773353bb7c *man/addpall.GP.Rd

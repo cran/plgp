@@ -21,6 +21,7 @@ formals(data.GP.improv)$rect <- rect
 ## set a default prior
 prior <- prior.GP(2)
 formals(data.GP.improv)$prior <- prior
+formals(data.GP.improv)$oracle <- FALSE
 
 ## use a small LHS candidate set
 formals(data.GP.improv)$cands <- 100
@@ -59,9 +60,6 @@ q2 <- q2 / length(outp)
 
 ## unscale the data locations
 X <- rectunscale(pall$X, rect)
-
-## set up to make two plots
-plot(mfrow=c(1,2))
 
 ## plot the summary stats of the predictive distribution
 par(mfrow=c(1,2))

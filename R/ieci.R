@@ -27,7 +27,7 @@
 ## wrapper used to calculate the ECIs (expected conditional improvements)
 ## in C, and then calculate the IECI by a (weighted) mean
 
-calc.eis <- function(tmat, fmin, w)
+calc.eis <- function(tmat, fmin, w=NULL)
   {
     n <- nrow(tmat)
 

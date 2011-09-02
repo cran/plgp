@@ -791,9 +791,10 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
         xstars <- findmin.GP(pall$X[nrow(pall$X),], prior)
         xstar <- drop(rectunscale(rbind(xstars), rect))
         Xc <- rbind(Xc, xstar)
-      } else { ## calculate the predictive variance of the reference location
+      } else if(!is.null(formals(adapt)$Xref)) {
+        ## calculate the predictive variance of the reference location
         mv <- var.adapt(formals(adapt)$Xref, rect, prior, verb=0)
-      }
+      } else mv <- NULL
 
       ## calculate the index with the best entropy reduction potential
       as <- adapt(Xc, rect, prior, verb)
@@ -830,7 +831,7 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
       ## maybe save the max log EI or IECI
       if(save) {
         if(oracle) psave$xstar <<- rbind(psave$xstar, xstar)
-        else {
+        else if(!is.null(mv)) {
           psave$vref <<- rbind(psave$vref, mv$v)
           psave$mref <<- rbind(psave$mref, mv$m)
         }
@@ -909,8 +910,10 @@ findmin.GP <- function(xstart, prior)
 
     ## calculate the MAP particule
     mi <- 1
-    for(p in 2:length(peach))
-      if(peach[[p]]$lpost > peach[[mi]]$lpost) mi <- p
+    if(length(peach) > 1) {
+      for(p in 2:length(peach))
+        if(peach[[p]]$lpost > peach[[mi]]$lpost) mi <- p
+    }
     Zt <- peach[[mi]]
     
     ## utility for calculations below
