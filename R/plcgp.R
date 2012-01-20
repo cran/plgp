@@ -24,6 +24,7 @@
 
 ## visible definition for R CMD CHECK
 Xcand <- NULL
+rm(Xcand)
 
 
 ## lpredprob.CGP:
@@ -35,7 +36,7 @@ Xcand <- NULL
 
 lpredprob.CGP <- function(z, Zt, prior)
   {
-    p <- pred.CGP(z$x, Zt,prior, mcreps=1000, cs=z$c)
+    p <- pred.CGP(z$x, Zt, prior, mcreps=1000, cs=z$c)
     if(!is.finite(p)) warning("bad weight in CGP")    
     return(log(p))
   }
@@ -360,6 +361,7 @@ addpall.CGP <- function(Z)
     pall$X <<- rbind(pall$X, Z$x)
     pall$C <<- c(pall$C, Z$c)
     pall$D <<- distance(pall$X)
+    if(!is.null(Z$y)) pall$Y <<- c(pall$Y, Z$y)
   }
 
 
@@ -402,7 +404,8 @@ data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2)
     else if(is.null(end) || begin == end) { ## adaptive sample
 
       ## choose some adaptive sampling candidates
-      if(is.na(cands)) Xc <- Xcand
+      if(class(cands) == "function") Xc <- cands()
+      else if(is.na(cands)) Xc <- Xcand
       else Xc <- lhs(cands, rect)
       ## Xc <- dopt.gp(n=cands, X=NULL, Xc=lhs(10*cands, rect))$XX
 
@@ -415,7 +418,7 @@ data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2)
       xs <- rectscale(x, rect)
 
       ## possibly remove the candidate from a fixed set
-      if(is.na(cands)) Xcand <<- Xcand[-indx,]
+      if(class(cands) != "function" && is.na(cands)) Xcand <<- Xcand[-indx,]
       
       ## maybe plot something
       if(verb > 1) {
@@ -426,7 +429,9 @@ data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2)
       }
 
       ## return the adaptively chosen location
-      return(list(x=xs, c=f(x)))
+      fx <- f(x)
+      if(is.list(fx)) return(c(list(x=xs), fx))
+      else return(list(x=xs, c=f(x)))
 
     } else {  ## create an initial design
 
@@ -434,16 +439,34 @@ data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2)
       ## if(verb > 0) cat("initializing with size", end-begin+1, "LHS\n")
       if(verb > 0) cat("initializing with size", end-begin+1, "MES\n")
       ## X <- lhs(end-begin+1, rect)
-      if(is.na(cands)) Xc <- Xcand
+      if(class(cands) != "function" && is.na(cands)) Xc <- Xcand
       else Xc <- lhs(10*(end-begin+1), rect)
       out <- dopt.gp(end-begin+1, X=NULL, Xcand=Xc)
       X <- out$XX
 
        ## possibly remove the candidate from a fixed set
-      if(is.na(cands)) Xcand <<- Xcand[-out$fi,]
+      if(class(cands) != "function" && is.na(cands)) Xcand <<- Xcand[-out$fi,]
       
       ## get the class labels
-      C <- f(X)
-      return(list(x=rectscale(X, rect), c=C))
+      fX <- f(X)
+      if(is.list(fX)) return(c(list(x=rectscale(X, rect)), fX))
+      else return(list(x=rectscale(X, rect), c=fX))
     }
+  }
+
+
+
+## getmap.CGP:
+##
+## return MAP particle
+
+getmap.CGP <- function(cl=2)
+  {
+    ## calculate the MAP particle
+    mi <- 1
+    if(length(peach) > 1) {
+      for(p in 2:length(peach))
+        if(peach[[p]][[cl]]$lpost > peach[[mi]][[cl]]$lpost) mi <- p
+    }
+    return(peach[[mi]])
   }

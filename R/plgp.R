@@ -118,7 +118,7 @@ draw.GP <- function(Zt, prior, l=3, h=4, thin=10, Y=NULL)
   {
     ## perhaps initialize instead of draw
     if(is.null(Zt)) return(init.GP(prior=prior))
-    if(prior$drate < 0 && prior$grate < 0) return(Zt)
+    if(any(prior$drate < 0) && prior$grate < 0) return(Zt)
     
     ## determine which Y to use
     if(is.null(Y)) Y <- pall$Y
@@ -131,7 +131,7 @@ draw.GP <- function(Zt, prior, l=3, h=4, thin=10, Y=NULL)
     for(i in 1:thin) {
 
       ## check if sampling d
-      if(prior$drate > 0) {
+      if(all(prior$drate > 0)) {
       ## propose a change to d
         if(prior$cov == "sim") {
           d.new <- mvnorm.propose.rw(Zt$d)
@@ -900,26 +900,36 @@ pred.mean.GP <- function(x, util, cov, dparam, gparam)
   }
 
 
+## getmap.GP:
+##
+## return MAP particle
+
+getmap.GP <- function()
+  {
+    ## calculate the MAP particle
+    mi <- 1
+    if(length(peach) > 1) {
+      for(p in 2:length(peach))
+        if(peach[[p]]$lpost > peach[[mi]]$lpost) mi <- p
+    }
+    return(peach[[mi]])
+  }
+
+
 ## findmin.GP:
 ##
 ## find the minimum of the predictive surface for the MAP particle
 
 findmin.GP <- function(xstart, prior)
   {
-    m <- ncol(pall$X)
-
-    ## calculate the MAP particule
-    mi <- 1
-    if(length(peach) > 1) {
-      for(p in 2:length(peach))
-        if(peach[[p]]$lpost > peach[[mi]]$lpost) mi <- p
-    }
-    Zt <- peach[[mi]]
+    ## calculate the MAP particle
+    Zt <- getmap.GP()
     
     ## utility for calculations below
     util <- util.GP(Zt, prior, pall$Y, retKi=TRUE)
 
     ## call the optim function
+    m <- ncol(pall$X)
     xstar <- optim(xstart, pred.mean.GP, method="L-BFGS-B",
                    lower=rep(0,m), upper=rep(1,m), util=util,
                    cov=prior$cov, dparam=Zt$d, gparam=Zt$g)$par

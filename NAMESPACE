@@ -1,0 +1,26 @@
+# Load the shared object
+useDynLib(plgp)
+
+# Exports
+export(EI, data.GP, data.GP.improv, PL, dist2covar.symm, papply,
+       PL.clear, distance, params.CGP, draw.CGP, data.ConstGP.improv, 
+       params.ConstGP, addpall.CGP, draw.ConstGP, params.GP,
+       addpall.ConstGP, draw.GP, addpall.GP, ei.adapt, phist, 
+       alc.ConstGP, entropy, pred.CGP, alc.GP, entropy.adapt, 
+       pred.ConstGP, alc.adapt, entropy.bvsb, pred.GP, 
+       alc.const.adapt, exp2d.C, pred.mean.GP, calc.alcs, 
+       findmin.ConstGP, prior.CGP, calc.ecis, findmin.GP, 
+       prior.ConstGP, calc.eis, getmap.CGP, prior.GP, calc.ents, 
+       getmap.GP, propagate.CGP, calc.ieci, ieci.ConstGP, 
+       propagate.ConstGP, calc.iecis, ieci.GP, propagate.GP, 
+       calc.ktKik.x, ieci.adapt, calc.vars, ieci.const.adapt, 
+       rectscale, calc2.ktKik.x, init.CGP, rectunscale, 
+       covar, init.ConstGP, renorm.lweights, covar.sep, init.GP,
+       renorm.weights, covar.sim, latents.CGP, resample, cv.folds, 
+       lpost.GP, tquants, lpredprob.GP, data.CGP, lpredprob.CGP,
+       data.CGP.adapt, lpredprob.ConstGP)
+
+# Import all packages listed as Imports or Depends
+import(mvtnorm,  tgp)
+
+# no S3 methods

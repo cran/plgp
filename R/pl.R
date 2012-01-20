@@ -23,12 +23,12 @@
 
 
 ## visible definition for R CMD CHECK
-pall <- peach <- psave <- NULL
-
+pall <- peach <- psave <- NULL 
+rm(pall, peach, psave)
 
 ## resample:
 ##
-## use the provided redprob function to do the PL-resample
+## use the provided predprob function to do the PL-resample
 ## step by frist calculating the resample weights with
 ## lpredprob and then resampling the particles according
 ## to the weights
@@ -231,7 +231,7 @@ renorm.weights <- function(weights)
   }
 
 
-## renorm.lweights
+## renorm.lweights:
 ##
 ## for numerical stability, re-normalizes a vector
 ## of log-weights by adding in a factor to make the
@@ -244,3 +244,4 @@ renorm.lweights <- function(lweights)
     return(renorm.weights(exp(lweights)))
 
 }
+

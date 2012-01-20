@@ -52,6 +52,8 @@
 \alias{psave}
 \alias{Xcand}
 \alias{phist}
+\alias{getmap.CGP} 
+\alias{getmap.GP}
 
 \title{Internal plgp Functions}
 \description{

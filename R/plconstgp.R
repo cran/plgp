@@ -400,7 +400,7 @@ findmin.ConstGP <- function(xstart, prior)
     ## call the optim function
     xstar <- optim(xstart, pred.mean.GP, method="L-BFGS-B",
                    lower=rep(0,m), upper=rep(1,m), util=util,
-                   cov=util$GP$cov, dparam=Zt$d, gparam=Zt$g)$par
+                   cov=prior$GP$cov, dparam=Zt$d, gparam=Zt$g)$par
     return(xstar)
   }
       

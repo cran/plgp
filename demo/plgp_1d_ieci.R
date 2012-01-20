@@ -61,7 +61,7 @@ outp <- papply(XX=XXs, fun=pred.GP, Y=pall$Y, quants=TRUE, prior=prior)
 X <- rectunscale(pall$X, rect)
 
 ## set up to make two plots
-plot(mfrow=c(1,2))
+par(mfrow=c(1,2))
 
 ## plot the individual lines of the predictive distribution
 plot(X,pall$Y, main="predictive: each particle", xlab="x", ylab="y")
