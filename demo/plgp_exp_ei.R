@@ -78,7 +78,7 @@ hist(params$g)
 ## plot EI progress
 dev.new()
 par(mfrow=c(1,2)) ## two plots
-## plot the sampled points over time
+## plot the sampled points over time
 plot(X[,1], main="sampled points",
      xlab="t", ylab="x1 & x2")
 abline(v=start, col=3, lty=3)
@@ -86,6 +86,6 @@ lines((start+1):end, psave$xstar[,1])
 points(X[,2], col=2, pch=18)
 lines((start+1):end, psave$xstar[,2], col=2, lty=2)
 legend("topright", c("x1", "x2"), col=1:2, pch=c(21,18))
-## plot the max log ei over time
+## plot the max log ei over time
 plot((start+1):end, psave$max.as, type="l", xlab="t",
      ylab="max log EI", main="progress meter")

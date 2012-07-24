@@ -28,8 +28,12 @@
 #include "rhelp.h"
 #include <stdlib.h>
 #include <assert.h>
+#ifdef RPRINT
 #include <R.h>
 #include <Rmath.h>
+#else 
+#include <math.h>
+#endif
 
 /* defined in covar.c */
 void covar(const int col, double **X1, const int n1, double **X2,
@@ -37,6 +41,7 @@ void covar(const int col, double **X1, const int n1, double **X2,
 void covar_sep(const int col, double **X1, const int n1, double **X2,
 	       const int n2, double *d, double g, double **K);
 
+#ifdef RPRINT
 /*
  * EI:
  *
@@ -59,6 +64,14 @@ double EI(const double m, const double s2, const int df,
 
   return(ei);
 }
+#else /* this is so we can compile this file for mex/Matlab */
+double EI(const double m, const double s2, const int df, 
+	  const double fmin)
+{
+  error("EI not defined due to missing pt( and dt(");
+  return(0);
+}
+#endif
 
 
 /*
@@ -98,6 +111,7 @@ double calc_ieci(const int m, double *ktKik, double *s2p, const double phi,
 		 const double g, double *badj, double *tm, const double tdf, 
 		 const double fmin, double *w)
 {
+
   int i;
   double zphi, ts2, eci, ieci;
 
@@ -123,17 +137,18 @@ double calc_ieci(const int m, double *ktKik, double *s2p, const double phi,
  */
 
 double calc_alc(const int m, double *ktKik, double *s2p, const double phi, 
-		const double g, double *badj, const double tdf, double *w)
+		double *badj, const double tdf, double *w)
 {
   int i;
   double zphi, ts2, alc;
 
   alc = 0.0;
   for(i=0; i<m; i++) {
-    zphi = (s2p[1] + phi)*(1.0 + g - ktKik[i]);
-    ts2 = badj[i] * zphi / (s2p[0] + tdf);
+    zphi = (s2p[1] + phi)*ktKik[i];
+    if(badj) ts2 = badj[i] * zphi / (s2p[0] + tdf);
+    else ts2 = zphi / (s2p[0] + tdf);
     if(w) alc += w[i]*tdf*ts2/(tdf-2.0);
-    else alc += ts2;
+    else alc += ts2*tdf/(tdf-2.0);
   }
 
   return (alc/m);
@@ -144,33 +159,34 @@ double calc_alc(const int m, double *ktKik, double *s2p, const double phi,
  * calc_g_mui_kxy:
  *
  * function for calculating the g vector, mui scalar, and
- * kxy vector for the IECI calculation
+ * kxy vector for the IECI calculation; kx is length-n 
+ * utility space;
  */
 
 void calc_g_mui_kxy(const int col, double *x, double **X, 
 		    const int n, double **Ki, double **Xref, 
 		    const int m, double *d, const int dlen, 
 		    const double g, double *gvec, double *mui, 
-		    double *kxy)
+		    double *kx, double *kxy)
 {
-  double *kx;
   double mu_neg;
   int i;
 
-  /* allocate kx */
-  kx = new_vector(n);
+  /* sanity check */
+  if(m == 0) assert(!kxy && !Xref);
 
   if(dlen == 1) { /* isotropic */
     /* kx <- drop(covar(X1=pall$X, X2=x, d=Zt$d, g=Zt$g)) */
     covar(col, &x, 1, X, n, *d, g, &kx);
     /* kxy <- drop(covar(X1=x, X2=Xref, d=Zt$d, g=0)) */
-    covar(col, &x, 1, Xref, m, *d, 0.0, &kxy);
+    if(m > 0) covar(col, &x, 1, Xref, m, *d, 0.0, &kxy);
   } else {
     assert(dlen == col);
     /* kx <- drop(covar.sep(X1=pall$X, X2=x, d=Zt$d, g=Zt$g)) */
     covar_sep(col, &x, 1, X, n, d, g, &kx);
     /* kxy <- drop(covar.sep(X1=x, X2=Xref, d=Zt$d, g=0)) */
-    covar_sep(col, &x, 1, Xref, m, d, 0.0, &kxy);
+    if(m > 0) covar_sep(col, &x, 1, Xref, m, d, 0.0, &kxy);
+    /* I GUESS I NEVER CODED THE SIM VERSION */
   }
 
   /* Kikx <- drop(util$Ki %*% kx) stored in gvex */
@@ -182,9 +198,6 @@ void calc_g_mui_kxy(const int col, double *x, double **X,
   /* gvec <- - Kikx/mui */
   mu_neg = 0.0 - 1.0/(*mui);
   for(i=0; i<n; i++) gvec[i] *= mu_neg;
-
-  /* clean up */
-  free(kx);
 }
 
 
@@ -196,19 +209,22 @@ void calc_g_mui_kxy(const int col, double *x, double **X,
  */
 
 void calc_ktKikx(double *ktKik, const int m, double **k, const int n,
-		 double *g, const double mui, double *kxy, double *ktKikx)
+		 double *g, const double mui, double *kxy, double **Gmui_util,
+		 double *ktGmui_util, double *ktKikx)
 {
   int i;
   double **Gmui;
   double *ktGmui;
 
   /* first calculate Gmui = g %*% t(g)/mu */
-  Gmui = new_zero_matrix(n, n);
+  if(!Gmui_util) Gmui = new_matrix(n, n);
+  else Gmui = Gmui_util;
   linalg_dgemm(CblasNoTrans,CblasTrans,n,n,1,
                mui,&g,n,&g,n,0.0,Gmui,n);
 
   /* used in the for loop below */
-  ktGmui = new_vector(n);
+  if(!ktGmui_util) ktGmui = new_vector(n);
+  else ktGmui = ktGmui_util;
 
   /* loop over all of the m candidates */
   for(i=0; i<m; i++) {
@@ -218,7 +234,8 @@ void calc_ktKikx(double *ktKik, const int m, double **k, const int n,
     linalg_dsymv(n,1.0,Gmui,n,k[i],1,0.0,ktGmui,1);
 
     /* ktKik += diag(t(k) %*% (g %*% t(g) * mui) %*% k) */
-    ktKikx[i] = ktKik[i] + linalg_ddot(n, ktGmui, 1, k[i], 1);
+    if(ktKik) ktKikx[i] = ktKik[i] + linalg_ddot(n, ktGmui, 1, k[i], 1);
+    else ktKikx[i] = linalg_ddot(n, ktGmui, 1, k[i], 1);
 
     /* ktKik.x += + 2*diag(kxy %*% t(g) %*% k) */
     ktKikx[i] += 2.0*linalg_ddot(n, k[i], 1, g, 1)*kxy[i];
@@ -228,8 +245,8 @@ void calc_ktKikx(double *ktKik, const int m, double **k, const int n,
   }
 
   /* clean up */
-  free(ktGmui);
-  delete_matrix(Gmui);
+  if(!ktGmui_util) free(ktGmui);
+  if(!Gmui_util) delete_matrix(Gmui);
 }
 
 
@@ -254,7 +271,7 @@ void calc_ktKikx_R(double *ktKik_inout, int *m_in, double *k_in, int *n_in,
   k = new_matrix_bones(k_in, m, n);
 
   /* do the work */
-  calc_ktKikx(ktKik_inout, m, k, n, g_in, *mui_in, kxy_in, ktKik_inout);
+  calc_ktKikx(ktKik_inout, m, k, n, g_in, *mui_in, kxy_in, NULL, NULL, ktKik_inout);
 
   /* clean up */
   free(k);
@@ -275,7 +292,7 @@ void calc2_ktKikx_R(double *ktKik_inout, int *m_in, double *k_in, int *n_in,
 {
   int m, n, col, dlen;
   double **X, **Xref, **k, **Ki;
-  double *gvec, *kxy;
+  double *gvec, *kxy, *kx;
   double mui = 0;
   
   /* copy integers */
@@ -295,11 +312,13 @@ void calc2_ktKikx_R(double *ktKik_inout, int *m_in, double *k_in, int *n_in,
   kxy = new_vector(m);
 
   /* do the work */
+  kx = new_vector(n);
   calc_g_mui_kxy(col, x_in, X, n, Ki, Xref, m, d_in,
-		 dlen, *g_in, gvec, &mui, kxy);
+		 dlen, *g_in, gvec, &mui, kx, kxy);
+  free(kx);
 
   /* do the work */
-  calc_ktKikx(ktKik_inout, m, k, n, gvec, mui, kxy, ktKik_inout);
+  calc_ktKikx(ktKik_inout, m, k, n, gvec, mui, kxy, NULL, NULL, ktKik_inout);
 
   /* clean up */
   free(gvec);
@@ -327,7 +346,7 @@ void calc_ecis_R(double *ktKik_inout, int *m_in, double *k_in, int *n_in,
 {
   int m, n, col, dlen;
   double **X, **Xref, **k, **Ki;
-  double *gvec, *kxy;
+  double *gvec, *kxy, *kx;
   double mui;
 
   mui = 0;
@@ -349,11 +368,13 @@ void calc_ecis_R(double *ktKik_inout, int *m_in, double *k_in, int *n_in,
   kxy = new_vector(m);
 
   /* calculate the g vector, mui, and kxy */
+  kx = new_vector(n);
   calc_g_mui_kxy(col, x_in, X, n, Ki, Xref, m, d_in, 
-		 dlen, *g_in, gvec, &mui, kxy);
+		 dlen, *g_in, gvec, &mui, kx, kxy);
+  free(kx);
 
   /* use g, mu, and kxy to calculate ktKik.x */
-  calc_ktKikx(ktKik_inout, m, k, n, gvec, mui, kxy, ktKik_inout);
+  calc_ktKikx(ktKik_inout, m, k, n, gvec, mui, kxy, NULL, NULL, ktKik_inout);
 
   calc_ecis(m, ktKik_inout, s2p_in, *phi_in, *g_in, badj_in, 
 	    tm_in, *tdf_in, *fmin_in);
@@ -385,7 +406,7 @@ void calc_ieci_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
 {
   int m, n, col, dlen;
   double **X, **Xref, **k, **Ki;
-  double *gvec, *kxy;
+  double *gvec, *kxy, *kx;
   double mui;
 
   mui = 0;
@@ -407,11 +428,13 @@ void calc_ieci_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
   kxy = new_vector(m);
 
   /* calculate the g vector, mui, and kxy */
+  kx = new_vector(n);
   calc_g_mui_kxy(col, x_in, X, n, Ki, Xref, m, d_in, 
-		 dlen, *g_in, gvec, &mui, kxy);
+		 dlen, *g_in, gvec, &mui, kx, kxy);
+  free(kx);
 
   /* use g, mu, and kxy to calculate ktKik.x */
-  calc_ktKikx(ktKik_in, m, k, n, gvec, mui, kxy, ktKik_in);
+  calc_ktKikx(ktKik_in, m, k, n, gvec, mui, kxy, NULL, NULL, ktKik_in);
 
   /* calculate the IECI */
   *ieci_out = calc_ieci(m, ktKik_in, s2p_in, *phi_in, *g_in, badj_in, 
@@ -444,8 +467,8 @@ void calc_iecis_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
 		  int *verb_in, double *ieci_out)
 {
   int m, n, col, dlen, I, i;
-  double **X, **Xcand, **Xref, **k, **Ki;
-  double *gvec, *kxy, *ktKikx;
+  double **X, **Xcand, **Xref, **k, **Ki, **Gmui;
+  double *gvec, *kxy, *ktKikx, *kx, *ktGmui;
   double mui;
 
   mui = 0;
@@ -467,18 +490,23 @@ void calc_iecis_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
   /* allocate g, kxy, and ktKikx vectors */
   gvec = new_vector(n);
   kxy = new_vector(m);
+  kx = new_vector(n);
   ktKikx = new_vector(m);
+
+  /* utility allocations */
+  Gmui = new_matrix(n, n);
+  ktGmui = new_vector(n);
 
   /* calculate the IECI for each candidate */
   for(i=0; i<I; i++) {
 
     /* progress meter */
     if(*verb_in > 1)
-      myprintf(stdout, "calculating ECI for point %d of %d\n", i, I);
+      myprintf(mystdout, "calculating ECI for point %d of %d\n", i, I);
     
     /* calculate the g vector, mui, and kxy */
     calc_g_mui_kxy(col, Xcand[i], X, n, Ki, Xref, m, d_in, 
-		   dlen, *g_in, gvec, &mui, kxy);
+		   dlen, *g_in, gvec, &mui, kx, kxy);
 
     /* skip if numerical problems */
     if(mui <= sqrt(DOUBLE_EPS)) {
@@ -487,7 +515,7 @@ void calc_iecis_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
     }
 
     /* use g, mu, and kxy to calculate ktKik.x */
-    calc_ktKikx(ktKik_in, m, k, n, gvec, mui, kxy, ktKikx);
+    calc_ktKikx(ktKik_in, m, k, n, gvec, mui, kxy, Gmui, ktGmui, ktKikx);
     
     /* calculate the IECI */
     ieci_out[i] = calc_ieci(m, ktKikx, s2p_in, *phi_in, *g_in, badj_in, 
@@ -495,8 +523,11 @@ void calc_iecis_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
   }
 
   /* clean up */
+  delete_matrix(Gmui);
+  free(ktGmui);
   free(ktKikx);
   free(gvec);
+  free(kx);
   free(kxy);
   free(X);
   free(Xcand);
@@ -515,15 +546,16 @@ void calc_iecis_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
  */
 
 
-void calc_alcs_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
-		  double *Xcand_in, int *I_in, int *col_in, double *X_in, 
-		  double *Ki_in, double *Xref_in, double *d_in, int *dlen_in, 
-		  double *g_in, double *s2p_in, double *phi_in, double *badj_in, 
-		  int *tdf_in, double *w_in, int *verb_in, double *alc_out)
+void calc_alcs_R(int *m_in, double *k_in, int *n_in,
+		 double *Xcand_in, int *I_in, int *col_in, double *X_in, 
+		 double *Ki_in, double *Xref_in, double *d_in, int *dlen_in, 
+		 double *g_in, double *s2p_in, double *phi_in, double *badj_in, 
+		 int *tdf_in, double *w_in, int *wnull_in, int *verb_in, 
+		 double *alc_out)
 {
   int m, n, col, dlen, I, i;
-  double **X, **Xcand, **Xref, **k, **Ki;
-  double *gvec, *kxy, *ktKikx;
+  double **X, **Xcand, **Xref, **k, **Ki, **Gmui;
+  double *gvec, *kx, *kxy, *ktKikx, *ktGmui;
   double mui;
 
   mui = 0;
@@ -546,17 +578,25 @@ void calc_alcs_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
   gvec = new_vector(n);
   kxy = new_vector(m);
   ktKikx = new_vector(m);
+  kx = new_vector(n);
+
+  /* deal with NULLs */
+  if(*wnull_in) w_in = NULL;
+
+  /* utility allocations */
+  Gmui = new_matrix(n, n);
+  ktGmui = new_vector(n);
 
   /* calculate the ALC for each candidate */
   for(i=0; i<I; i++) {
 
     /* progress meter */
     if(*verb_in > 1)
-      myprintf(stdout, "calculating ALC for point %d of %d\n", i, I);
+      myprintf(mystdout, "calculating ALC for point %d of %d\n", i, I);
     
     /* calculate the g vector, mui, and kxy */
     calc_g_mui_kxy(col, Xcand[i], X, n, Ki, Xref, m, d_in, 
-		   dlen, *g_in, gvec, &mui, kxy);
+		   dlen, *g_in, gvec, &mui, kx, kxy);
 
     /* skip if numerical problems */
     if(mui <= sqrt(DOUBLE_EPS)) {
@@ -565,16 +605,19 @@ void calc_alcs_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
     }
 
     /* use g, mu, and kxy to calculate ktKik.x */
-    calc_ktKikx(ktKik_in, m, k, n, gvec, mui, kxy, ktKikx);
+    calc_ktKikx(NULL, m, k, n, gvec, mui, kxy, Gmui, ktGmui, ktKikx);
     
-    /* calculate the IECI */
-    alc_out[i] = calc_alc(m, ktKikx, s2p_in, *phi_in, *g_in, badj_in, 
-			   *tdf_in, w_in);
+    /* calculate the ALC */
+    alc_out[i] = calc_alc(m, ktKikx, s2p_in, *phi_in, badj_in, 
+			  *tdf_in, w_in);
   }
 
   /* clean up */
+  delete_matrix(Gmui);
+  free(ktGmui);
   free(ktKikx);
   free(gvec);
+  free(kx);
   free(kxy);
   free(X);
   free(Xcand);

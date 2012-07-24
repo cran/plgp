@@ -94,14 +94,13 @@ calc.iecis <- function(ktKik, k, Xcand, X, Ki, Xref, d, g, s2p, phi,
 ##
 ## wrapper used to calculate the ALCs in C
 
-calc.alcs <- function(ktKik, k, Xcand, X, Ki, Xref, d, g, s2p, phi,
-                       badj, tdf, w, verb)
+calc.alcs <- function(k, Xcand, X, Ki, Xref, d, g, s2p, phi,
+                      badj, tdf, w, verb)
   {
-    m <- length(ktKik)
+    m <- nrow(Xref)
     I <- nrow(Xcand)
 
     return(.C("calc_alcs_R",
-              ktKik = as.double(ktKik),
               m = as.integer(m),
               k = as.double(k),
               n = as.integer(nrow(k)),
@@ -119,9 +118,10 @@ calc.alcs <- function(ktKik, k, Xcand, X, Ki, Xref, d, g, s2p, phi,
               badj = as.double(badj),
               tdf = as.integer(tdf),
               w = as.double(w),
+              w.null = as.integer(is.null(w)),
               verb = as.integer(verb),
-              iecis = double(I),
-              PACKAGE="plgp")$iecis)
+              alcs = double(I),
+              PACKAGE="plgp")$alcs)
   }
 
 

@@ -416,20 +416,14 @@ alc.GP <- function(Xcand, Xref, Zt, prior, Y=NULL, w=NULL, verb=1)
       k <- covar.sim(X1=pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
     }
 
-    ## build up the K quantities
-    ktKi <- t(k) %*% util$Ki
-    ktKik <- diag(ktKi %*% k)
-    ktKiYmFbmu <- drop(ktKi %*% util$YmFbmu)
-    if(any(!is.finite(ktKiYmFbmu))) stop("bad ktKiYmFbmu")
-
     ## initial steps in the predictive variance calculation
     FF <- cbind(1,Xref)
     badj <- 1 + diag(FF %*% util$Vb %*% t(FF))  ## could be simplified further
     
-    ## IECI calculation for each entry in Xcand
-    alc <- calc.alcs(ktKik, k, Xcand, pall$X, util$Ki, Xref, Zt$d, Zt$g,
+    ## ALC calculation for each entry in Xcand
+    alc <- calc.alcs(k, Xcand, pall$X, util$Ki, Xref, Zt$d, Zt$g,
                      prior$s2p, util$phi, badj, tdf, w, verb)
-    
+
     ## sanity checks
     if(any(is.nan(alc))) stop("NaN in alc")
     
@@ -728,15 +722,16 @@ alc.adapt <- function(Xcand, rect, prior, verb, Xref=NULL, fun=alc.GP)
     ## get predictive distribution information
     alcs <- papply(Xcand=Xcands, Xref=Xrefs, fun=fun, prior=prior, verb=verb)
 
-    ## gather the entropy info for each x averaged over
+    ## gather the alc info for each x averaged over
     alc <- rep(0, nrow(Xcands))
     for(p in 1:length(alcs)) alc <- alc + alcs[[p]]
 
     ## calculate mean vars to in order to make a better progress meter
-    mvar <- mean(var.adapt(Xref, rect, prior, verb=0)$v)
+    ## mvar <- mean(var.adapt(Xref, rect, prior, verb=0)$v)
 
     ## return the candidate with the most potential
-    return(mvar-alc/length(alcs))
+    return(alc/length(alcs))
+    ## return(mvar-alc/length(alcs))
     ##return(-alc/length(alcs))
   }
 

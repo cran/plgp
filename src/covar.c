@@ -25,7 +25,11 @@
 
 #include "matrix.h"
 #include <stdlib.h>
+#ifdef RPRINT
 #include <R.h>
+#else 
+#include <math.h>
+#endif
 
 /*
  * covar:
@@ -154,28 +158,16 @@ void covar_sim_symm(const int col, double **X, const int n,
 
 
 /*
- * distance_R:
- *
- * function for calculating the distance matrix between
- * the rows of X1 and X2, with output in D_out -- using
- * a built-in R interface
+ * distance:
+ * 
+ * C-side version of distance_R
  */
- 
-void distance_R(double *X1_in, int *n1_in, double *X2_in, 
-		int *n2_in, int *m_in, double *D_out)
-{
-  int n1, n2, m, i, j, k;
-  double **X1, **X2, **D;
-  
-  /* copy integers */
-  n1 = *n1_in;
-  n2 = *n2_in;
-  m = *m_in;
 
-  /* make matrix bones */
-  X1 = new_matrix_bones(X1_in, n1, m);
-  X2 = new_matrix_bones(X2_in, n2, m);
-  D = new_matrix_bones(D_out, n1, n2);
+void distance(double **X1, const unsigned int n1, double **X2,
+	      const unsigned int n2, const unsigned int m,
+	      double **D)
+{
+  unsigned int i,j,k;
 
   /* for each row of X1 and X2 */
   for(i=0; i<n1; i++) {
@@ -189,6 +181,29 @@ void distance_R(double *X1_in, int *n1_in, double *X2_in,
 
     }
   }
+}
+
+
+
+/*
+ * distance_R:
+ *
+ * function for calculating the distance matrix between
+ * the rows of X1 and X2, with output in D_out -- using
+ * a built-in R interface
+ */
+ 
+void distance_R(double *X1_in, int *n1_in, double *X2_in, 
+		int *n2_in, int *m_in, double *D_out)
+{
+  double **X1, **X2, **D;
+  
+  /* make matrix bones */
+  X1 = new_matrix_bones(X1_in, *n1_in, *m_in);
+  X2 = new_matrix_bones(X2_in, *n2_in, *m_in);
+  D = new_matrix_bones(D_out, *n1_in, *n2_in);
+
+  distance(X1, *n1_in, X2, *n2_in, *m_in, D);
 
   /* clean up */
   free(X1);
@@ -198,7 +213,7 @@ void distance_R(double *X1_in, int *n1_in, double *X2_in,
 
 
 /*
- * distance_R:
+ * distance_symm_R:
  *
  * function for calculating the distance matrix between
  * the rows of X1 and itself, with output in the symmetric

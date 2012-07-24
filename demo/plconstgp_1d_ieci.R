@@ -108,7 +108,7 @@ plot(XX, c1, type="l", main="probability of constraint violation",
 
 ## plot the progress
 dev.new()
-par(mfrow=c(1,2)) ## two plots
+par(mfrow=c(1,2)) ## two plots
 ## plot the sampled locations
 ## pdf("taddy_samps.pdf", width=5.5, height=5.5)
 plot(X, xlab="t", ylab="x", main="progress over time")

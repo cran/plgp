@@ -1,8 +1,8 @@
 Package: plgp
 Type: Package
 Title: Particle Learning of Gaussian Processes
-Version: 1.1-4
-Date: 2012-01-20
+Version: 1.1-5
+Date: 2012-07-24
 Author: Robert B. Gramacy <rbgramacy@chicagobooth.edu>
 Maintainer: Robert B. Gramacy <rbgramacy@chicagobooth.edu>
 Description: Sequential Monte Carlo inference for fully Bayesian
@@ -25,6 +25,6 @@ Depends: R (>= 2.4), mvtnorm, tgp
 Suggests: akima, ellipse, splancs
 License: LGPL
 URL: http://faculty.chicagobooth.edu/robert.gramacy/plgp.html
-Packaged: 2012-01-20 20:02:50 UTC; bobby
+Packaged: 2012-07-24 14:37:34 UTC; bobby
 Repository: CRAN
-Date/Publication: 2012-01-21 07:56:34
+Date/Publication: 2012-07-24 15:12:20

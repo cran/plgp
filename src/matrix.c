@@ -27,7 +27,6 @@
 #include "matrix.h"
 #include <assert.h>
 #include <math.h>
-#include <stdio.h>
 #include <stdlib.h>
 
 
@@ -291,9 +290,9 @@ double ** new_shift_matrix(double** M, unsigned int n1, unsigned int n2)
     return NULL;
   }
   m = new_matrix(n1, (n2-1));
-  /* printMatrix(M, n1, n2, stdout); */
+  /* printMatrix(M, n1, n2, mystdout); */
   for(i=0; i<n1; i++) for(j=0; j<(n2-1); j++) m[i][j] = M[i][j+1];
-  /* printMatrix(m, n1, (n2-1), stdout); */
+  /* printMatrix(m, n1, (n2-1), mystdout); */
   return m;
 }
 
@@ -734,10 +733,33 @@ void sum_of_columns_f(double *s, double **M, unsigned int n1, unsigned int n2,
   if(n1 <= 0 || n2 <= 0) {return;}
   assert(s && M);
   
-  /* calculate mean of columns */
+  /* calculate sum of columns */
   for(i=0; i<n2; i++) {
-    s[i] = 0;
-    for(j=0; j<n1; j++) s[i] += f(M[j][i]);
+    s[i] = f(M[0][i]);
+    for(j=1; j<n1; j++) s[i] += f(M[j][i]);
+  }
+}
+
+
+/*
+ * sum_of_columns:
+ *
+ * fill sum[n1] with the sum of the columns of M (n1 x n2);
+ * each element of which is sent through function f() first;
+ */
+
+void sum_of_columns(double *s, double **M, unsigned int n1, unsigned int n2)
+{
+  unsigned int i,j;
+
+  /* sanity checks */
+  if(n1 <= 0 || n2 <= 0) {return;}
+  assert(s && M);
+  
+  /* calculate sum of columns */
+  for(i=0; i<n2; i++) {
+    s[i] = M[j][0];
+    for(j=1; j<n1; j++) s[i] += M[j][i];
   }
 }
 
@@ -759,10 +781,11 @@ void sum_of_each_column_f(double *s, double **M, unsigned int *n1,
   if(n2 <= 0) {return;}
   assert(s && M);
   
-  /* calculate mean of columns */
+  /* calculate sum of columns */
   for(i=0; i<n2; i++) {
-    s[i] = 0;
-    for(j=0; j<n1[i]; j++) s[i] += f(M[j][i]);
+    if(n1[i] > 0) s[i] = f(M[j][i]);
+    else s[i] = 0;
+    for(j=1; j<n1[i]; j++) s[i] += f(M[j][i]);
   }
 }
 
@@ -1559,6 +1582,43 @@ double **new_p_submatrix(int *p, double **v, unsigned int nrows,
 
 
 /*
+ * sub_p_matrix_rows:
+ *
+ * copy the rows v[1:n1][p[n2]] to V.  
+ * must have ncol(v) == ncol(V) and nrow(V) >= lenp
+ * and nrow(v) >= max(p)
+ */
+
+void sub_p_matrix_rows(double **V, int *p, double **v, 
+		       unsigned int ncols, unsigned int lenp, 
+		       unsigned int row_offset)
+{
+  int i;
+  assert(V); assert(p); assert(v); assert(ncols > 0 && lenp > 0);
+  for(i=0; i<lenp; i++) 
+    dupv(V[i+row_offset], v[p[i]], ncols);
+}
+
+
+/*
+ * new_p_submatrix_rows:
+ *
+ * create a new matrix from the rows of v, specified
+ * by p.  Must have have ncol(v) == ncol(V) and nrow(V) >= nrows
+ * and nrow(v) >= max(p)
+ */
+
+double **new_p_submatrix_rows(int *p, double **v, unsigned int nrows, 
+			      unsigned int ncols, unsigned int row_offset)
+{
+  double **V;
+  if(nrows+row_offset == 0 || ncols == 0) return NULL;
+  V = new_matrix(nrows + row_offset, ncols);
+  if(nrows > 0) sub_p_matrix_rows(V, p, v, ncols, nrows, row_offset);
+  return(V);
+}
+
+/*
  * copy_p_matrix:
  *
  * copy v[n1][n2] to V into the positions specified by p1[n1] and p2[n2]
@@ -1587,7 +1647,7 @@ void check_means(double *mean, double *q1, double *median,
   int replace = 0;
   for(i=0; i<n; i++) {
     if(mean[i] > q2[i] || mean[i] < q1[i]) {
-      myprintf(stdout, "replacing %g with (%g,%g,%g)\n", 
+      myprintf(mystdout, "replacing %g with (%g,%g,%g)\n", 
 	       mean[i], q1[i], median[i], q2[i]);
       mean[i] = median[i];
       replace++;
@@ -1596,7 +1656,7 @@ void check_means(double *mean, double *q1, double *median,
   
   /* let us know what happened */
   if(replace > 0) 
-    myprintf(stdout, "NOTICE: %d predictive means replaced with medians\n", 
+    myprintf(mystdout, "NOTICE: %d predictive means replaced with medians\n", 
 	     replace);
 }
 
@@ -1613,7 +1673,7 @@ unsigned int matrix_constrained(int *p, double **X, unsigned int n1,
 {
   unsigned int i,j, count;
   count = 0;
-  /* printRect(stderr, rect->d, rect->boundary); */
+  /* printRect(mystderr, rect->d, rect->boundary); */
   for(i=0; i<n1; i++) {
     p[i] = 1;
     for(j=0; j<n2; j++) {
@@ -1784,7 +1844,7 @@ void normalize(double **X, double **rect, int N, int d, double normscale)
 	X[j][i] = (X[j][i] - rect[0][i]) / norm;
       X[j][i] = normscale * X[j][i];
       /* if(!(X[j][i] >=0 && X[j][i] <= normscale))
-	myprintf(stdout, "X[%d][%d] = %g, normscale = %g\n", j, i, X[j][i], normscale);
+	myprintf(mystdout, "X[%d][%d] = %g, normscale = %g\n", j, i, X[j][i], normscale);
 	assert(X[j][i] >=0 && X[j][i] <= normscale); */
     }
   }
