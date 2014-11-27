@@ -6,8 +6,9 @@ library(plgp)
 library(tgp)
 library(akima)
 
-## close down old graphics windows
+## close down old graphics windows and clear session
 graphics.off()
+rm(list=ls())
 
 ## create the design and data in a bounding rectangle
 rect <-  rbind(c(-2,2),c(-2,2))
@@ -33,7 +34,7 @@ prior <- prior.CGP(2)
 ## being in the same class -- causes an error
 
 ## Particle Learning Inference!
-out <- PL(data=data.CGP, ## static PL
+out <- PL(dstream=data.CGP, ## static PL
           start=start, end=end,
           init=draw.CGP,  ## initializing with Metropolis-Hastings
           lpredprob.CGP, propagate.CGP, prior=prior,
@@ -63,7 +64,7 @@ miss <- CCp != CC
 sum(miss)
 
 ## unscale the data locations
-X <- rectunscale(pall$X, rect)
+X <- rectunscale(PL.env$pall$X, rect)
   
 ## plot the summary stats of the predictive distribution
 par(mfrow=c(1,2))

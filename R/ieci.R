@@ -35,6 +35,7 @@ calc.eis <- function(tmat, fmin, w=NULL)
               tmat = as.double(t(tmat)),
               n = as.integer(n),
               fmin = as.double(fmin),
+              bw = as.integer(length(w)),
               w = as.double(w),
               eis = double(n),
               PACKAGE="plgp")$eis)
@@ -84,6 +85,7 @@ calc.iecis <- function(ktKik, k, Xcand, X, Ki, Xref, d, g, s2p, phi,
               tdf = as.integer(tdf),
               fmin = as.double(fmin),
               w = as.double(w),
+              w.null = as.integer(is.null(w)),
               verb = as.integer(verb),
               iecis = double(I),
               PACKAGE="plgp")$iecis)

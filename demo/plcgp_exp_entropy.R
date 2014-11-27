@@ -6,8 +6,9 @@ library(plgp)
 library(tgp)
 library(akima)
 
-## close down old graphics windows
+## close down old graphics windows and clear session
 graphics.off()
+rm(list=ls())
 
 ## set bounding rectangle for adaptive sampling
 rect <-  rbind(c(-2,2),c(-2,2))
@@ -17,12 +18,16 @@ formals(data.CGP.adapt)$rect <- rect
 formals(data.CGP.adapt)$f <- exp2d.C
 
 ## set candidate locations for the Xs
-Xcand <<- dopt.gp(200, Xcand=lhs(200*10, rect))$XX
+PL.env$Xcand <- dopt.gp(200, Xcand=lhs(200*10, rect))$XX
 formals(data.CGP.adapt)$cands <- NA
 
 ## set the CGP prior
 prior <- prior.CGP(2, "separable")
 formals(data.CGP.adapt)$prior <- prior
+
+## use akima
+library(akima)
+formals(data.CGP.adapt)$interp <- interp
 
 ## start and end
 start <- 25
@@ -32,7 +37,7 @@ end <- 100
 ## being in the same class
 
 ## do the particle learning
-out <- PL(data=data.CGP.adapt, ## adaptive design PL
+out <- PL(dstream=data.CGP.adapt, ## adaptive design PL
           start=start, end=end,
           init=draw.CGP,  ## init with Metropolis-Hastings
           lpredprob.CGP, propagate.CGP, prior=prior,
@@ -62,7 +67,7 @@ miss <- CCp != CC
 sum(miss)
 
 ## unscale the data locations
-X <- rectunscale(pall$X, rect)
+X <- rectunscale(PL.env$pall$X, rect)
 
 ## plot the summary stats of the predictive distribution
 par(mfrow=c(1,2))

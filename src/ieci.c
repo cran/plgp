@@ -41,6 +41,7 @@ void covar(const int col, double **X1, const int n1, double **X2,
 void covar_sep(const int col, double **X1, const int n1, double **X2,
 	       const int n2, double *d, double g, double **K);
 
+
 #ifdef RPRINT
 /*
  * EI:
@@ -464,7 +465,7 @@ void calc_iecis_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
 		  double *Ki_in, double *Xref_in, double *d_in, int *dlen_in, 
 		  double *g_in, double *s2p_in, double *phi_in, double *badj_in, 
 		  double *tm_in, int *tdf_in, double *fmin_in, double *w_in, 
-		  int *verb_in, double *ieci_out)
+      int *wnull_in, int *verb_in, double *ieci_out)
 {
   int m, n, col, dlen, I, i;
   double **X, **Xcand, **Xref, **k, **Ki, **Gmui;
@@ -492,6 +493,9 @@ void calc_iecis_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
   kxy = new_vector(m);
   kx = new_vector(n);
   ktKikx = new_vector(m);
+
+  /* deal with NULLs */
+  if(*wnull_in) w_in = NULL;
 
   /* utility allocations */
   Gmui = new_matrix(n, n);
@@ -635,7 +639,7 @@ void calc_alcs_R(int *m_in, double *k_in, int *n_in,
  */
 
 void calc_eis_R(double *tmat_in, int *n_in, double *fmin_in, 
-		double *w_in, double *eis_out)
+		int *bw_in, double *w_in, double *eis_out)
 {
   int n, i;
   double **tmat;
@@ -651,6 +655,7 @@ void calc_eis_R(double *tmat_in, int *n_in, double *fmin_in,
   for(i=0; i<n; i++)
     eis_out[i] = EI(tmat[i][0], tmat[i][1], tmat[i][2], fmin);
  
+  if(! *bw_in) w_in = NULL;
   if(w_in) for(i=0; i<n; i++) eis_out[i] *= w_in[i];
 
   /* clean up */

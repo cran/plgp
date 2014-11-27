@@ -23,8 +23,23 @@
 
 
 ## visible definition for R CMD CHECK
-pall <- peach <- psave <- NULL 
-rm(pall, peach, psave)
+PL.env <- new.env()
+
+## PL.clear:
+##
+## clear the pall and peach particle information
+
+PL.clear <- function()
+  {
+    PL.env$pall <- list()
+    PL.env$peach <- list()
+    PL.env$psave <- NULL
+  }
+
+
+## initialize
+PL.clear()
+
 
 ## resample:
 ##
@@ -36,12 +51,12 @@ rm(pall, peach, psave)
 resample <- function(z, lpredprob, prior)
   {
     ## allocate space for the weights
-    P <- length(peach)
+    P <- length(PL.env$peach)
     lweights <- rep(NA, P)
 
     ## calculate the weight of each particle
     for(p in 1:P)
-      lweights[p] <- lpredprob(z, peach[[p]], prior)
+      lweights[p] <- lpredprob(z, PL.env$peach[[p]], prior)
 
     ## re-normalize the log weights
     weights <- renorm.lweights(lweights)
@@ -55,10 +70,10 @@ resample <- function(z, lpredprob, prior)
     ## re-allocate the list of particles according to
     ## the re-sampled indices
     newp <- list()
-    for(p in 1:P) newp[[p]] <- peach[[indices[p]]]
+    for(p in 1:P) newp[[p]] <- PL.env$peach[[indices[p]]]
 
     ## copy in the new particles
-    peach <<- newp
+    PL.env$peach <- newp
   }
 
 
@@ -69,7 +84,7 @@ resample <- function(z, lpredprob, prior)
 ## and resample steps--  a print statement can be made every
 ## progress particles (none if zero)
 
-PL <- function(data, start, end, init, lpredprob, propagate, prior=NULL,
+PL <- function(dstream, start, end, init, lpredprob, propagate, prior=NULL,
                addpall=NULL, params=NULL, save=NULL, P=100, progress=10,
                cont=FALSE, verb=1)
   {
@@ -83,16 +98,16 @@ PL <- function(data, start, end, init, lpredprob, propagate, prior=NULL,
       PL.clear()
     
       ## push the starting data to the global
-      if(!is.null(addpall)) addpall(data(1,start))
+      if(!is.null(addpall)) addpall(dstream(1,start))
     
       ## do a few MH steps on the particles to get them to
       ## move from being samples from the prior to being samples from
       ## the posterior up to time start
-      peach <<- list()
-      peach[[1]] <<- init(NULL, prior=prior)
+      PL.env$peach <- list()
+      PL.env$peach[[1]] <- init(NULL, prior=prior)
       if(P > 1) {
         for(i in 2:P) {
-          peach[[i]] <<- init(peach[[i-1]], prior=prior)
+          PL.env$peach[[i]] <- init(PL.env$peach[[i-1]], prior=prior)
           ## print progress
           if(verb != 0) cat("  particle init: ", signif(100*i/P,2), "%   \r", sep="")
         }
@@ -106,7 +121,7 @@ PL <- function(data, start, end, init, lpredprob, propagate, prior=NULL,
     }
 
     ## no PL to do, only MCMC
-    if(start == end) return(peach)
+    if(start == end) return(PL.env$peach)
     
     ## do the particle learning
     for(t in (start+1):end) {
@@ -116,7 +131,7 @@ PL <- function(data, start, end, init, lpredprob, propagate, prior=NULL,
         cat("  particle learning: ", signif(100*t/end,2), "%   \r", sep="")
       
       ## re-sample step according to the next input-output pair
-      z <- data(t)
+      z <- dstream(t)
       resample(z, lpredprob, prior)  ## causes a change in peach
 
       ## optionally plot histograms of the parameters
@@ -129,7 +144,7 @@ PL <- function(data, start, end, init, lpredprob, propagate, prior=NULL,
       if(!is.null(addpall)) addpall(z)
       
       ## propagate each particle
-      for(p in 1:P) peach[[p]] <<- propagate(z, peach[[p]], prior)
+      for(p in 1:P) PL.env$peach[[p]] <- propagate(z, PL.env$peach[[p]], prior)
       
       ## optionally plot histograms of the params
       if((progress > 0) && (t %% progress == 0) && !is.null(params)) {
@@ -146,7 +161,7 @@ PL <- function(data, start, end, init, lpredprob, propagate, prior=NULL,
     if(progress > 0) cat("\n")
 
     ## return the PL particles
-    return(peach)
+    return(PL.env$peach)
   }
 
 
@@ -186,7 +201,7 @@ phist <- function(t, p, str=NULL, cpar=TRUE)
 
 papply <- function(fun, verb=1, pre="", ...)
   {
-    P <- length(peach)
+    P <- length(PL.env$peach)
 
     ## init the return list
     Ztp <- list()
@@ -198,7 +213,7 @@ papply <- function(fun, verb=1, pre="", ...)
       if(verb) cat(" ", pre, " applying: ", signif(100*p/P,2), "%   \r", sep="")
 
       ## predict at the XX locations for particle p
-      Ztp[[p]] <- fun(Zt=peach[[p]], ...)
+      Ztp[[p]] <- fun(Zt=PL.env$peach[[p]], ...)
     }
 
     ## finish off verbosity printing
@@ -206,18 +221,6 @@ papply <- function(fun, verb=1, pre="", ...)
 
     ## return the list
     return(Ztp)
-  }
-
-
-## PL.clear:
-##
-## clear the pall and peach particle information
-
-PL.clear <- function()
-  {
-    pall <<- list()
-    peach <<- list()
-    psave <<- NULL
   }
 
 

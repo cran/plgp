@@ -1,3 +1,24 @@
+1.1-7 (27 Nov 2014)
+-----
+
+moved akima back to suggests
+
+
+1.1-6 (24 Nov 2014)
+-----
+
+added PL.env environment to comply with CRAN's checks
+for global ariables
+
+now calling data dstream
+
+removed license file per Kurt's request
+
+updated plgp_sin1d.R demo to add a note about the 
+mean0.range1 function no longer being in the tgp
+NAMESPACE file
+
+
 1.1-5 (24 July 2012)
 -----
 

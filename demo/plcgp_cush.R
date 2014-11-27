@@ -7,8 +7,9 @@ library(akima)
 library(MASS)
 library(plgp)
 
-## close down old graphics windows
+## close down old graphics windows and clear session
 graphics.off()
+rm(list=ls())
 
 ## get the data in a bounding rectangle
 data(Cushings)
@@ -35,7 +36,7 @@ prior <- prior.CGP(2)
 ## being in the same class
 
 ## do the particle learning
-out <- PL(data=data.CGP, ## static PL
+out <- PL(dstream=data.CGP, ## static PL
           start=start, end=end,
           init=draw.CGP,  ## initializing with Metropolis-Hastings
           lpredprob.CGP, propagate.CGP, prior=prior,
@@ -61,7 +62,7 @@ mclass <- apply(class, 2, mean)
 ment <- apply(ent, 2, mean)
 
 ## unscale the data locations
-X <- rectunscale(pall$X, rect)
+X <- rectunscale(PL.env$pall$X, rect)
   
 ## plot the summary stats of the predictive distribution
 par(mfrow=c(1,2))

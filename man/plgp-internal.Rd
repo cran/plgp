@@ -47,10 +47,6 @@
 \alias{renorm.weights}
 \alias{renorm.lweights}
 \alias{latents.CGP}
-\alias{pall}
-\alias{peach}
-\alias{psave}
-\alias{Xcand}
 \alias{phist}
 \alias{getmap.CGP} 
 \alias{getmap.GP}

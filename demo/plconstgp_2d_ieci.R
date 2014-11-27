@@ -9,8 +9,9 @@ library(akima)
 library(ellipse)
 library(splancs)
 
-## close down old graphics windows
+## close down old graphics windows and clear session
 graphics.off()
+rm(list=ls())
 
 ## for calculating 2-d data under a unknown (but not hidden) constraint
 f2dc <- function(x, y=NULL, epoly)
@@ -57,12 +58,16 @@ formals(data.ConstGP.improv)$prior <- prior
 ## set up the IECI adaptive sampling protocol
 formals(data.ConstGP.improv)$cands <- 100
 
+## use akima for interp
+library(akima)
+formals(data.ConstGP.improv)$interp <- interp
+
 ## set up the start and end times
 start <- 25
 end <- 125
 
 ## run PL
-out <- PL(data=data.ConstGP.improv, ## adaptive design PL via IECI
+out <- PL(dstream=data.ConstGP.improv, ## adaptive design PL via IECI
           start=start, end=end,
           init=draw.ConstGP,  ## init by Metropolis-Hastings
           lpredprob=lpredprob.ConstGP,
@@ -82,7 +87,7 @@ for(i in 1:length(outp)) m <- m + outp[[i]]$m
 m <- m / length(outp)
 
 ## put X back on original scale
-X <- rectunscale(pall$X, rect)
+X <- rectunscale(PL.env$pall$X, rect)
 
 ## set up to make two plots
 par(mfrow=c(1,2))
@@ -116,10 +121,10 @@ plot(X[,1], xlab="t", ylim=c(-2,2), main="samples & oracles",
      ylab="x1 & x2")
 abline(v=start+1, lwd=2, col=2, lty=2)
 points(X[,2], col="blue", xlab="t")
-points((start+1):end, psave$xstar[,1], col=5, pch=18)
-points((start+1):end, psave$xstar[,2], col=6, pch=18)
+points((start+1):end, PL.env$psave$xstar[,1], col=5, pch=18)
+points((start+1):end, PL.env$psave$xstar[,2], col=6, pch=18)
 ## plot the progres meter
 ## pdf("nanprob_progress.pdf", width=5.5, height=5.5)
-plot(1:end, c(rep(NA, start), psave$max.as), type="l", lwd=2,
+plot(1:end, c(rep(NA, start), PL.env$psave$max.as), type="l", lwd=2,
      xlab="t", ylab="E(reduction in improv)", main="progress meter")
 abline(v=start+1, lwd=2, col=2, lty=2)

@@ -176,7 +176,7 @@ void distance(double **X1, const unsigned int n1, double **X2,
       /* sum the squared entries */
       D[i][j] = 0.0;
       for(k=0; k<m; k++) {
-	D[i][j] += sq(X1[i][k] - X2[j][k]);
+	      D[i][j] += sq(X1[i][k] - X2[j][k]);
       }
 
     }
@@ -239,8 +239,8 @@ void distance_symm_R(double *X_in, int *n_in, int *m_in, double *D_out)
     for(j=i+1; j<n; j++) {
       D[i][j] = 0.0;
       for(k=0; k<m; k++) 
-	D[i][j] += sq(X[i][k] - X[j][k]);
-      D[j][i] = D[i][j];
+	      D[i][j] += sq(X[i][k] - X[j][k]);
+        D[j][i] = D[i][j];
     }
   }
 

@@ -17,14 +17,16 @@
 data.GP(begin, end = NULL, X, Y)
 data.GP.improv(begin, end = NULL, f, rect, prior,
                adapt = ei.adapt, cands = 40,
-               save = TRUE, oracle = TRUE, verb = 2)
+               save = TRUE, oracle = TRUE, verb = 2,
+               interp = interp.loess)
 data.CGP(begin, end = NULL, X, C)
 data.CGP.adapt(begin, end = NULL, f, rect, prior,
-               cands = 40, verb = 2)
+               cands = 40, verb = 2, interp=interp.loess)
 data.ConstGP(begin, end = NULL, X, Y, C)
 data.ConstGP.improv(begin, end = NULL, f, rect, prior,
                     adapt = ieci.const.adapt , cands = 40, 
-                    save = TRUE, oracle = TRUE, verb = 2)
+                    save = TRUE, oracle = TRUE, verb = 2,
+                    interp = interp.loess)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
@@ -88,6 +90,12 @@ data.ConstGP.improv(begin, end = NULL, f, rect, prior,
     verbosity level for printing the progress of improv and other
     adaptive sampling calculations
   }
+ \item{interp}{
+    function for smoothing of 2-d image plots.  The default comes
+    from \code{\link[tgp]{interp.loess}}, but what works best is
+    \code{\link[akima]{interp}} which requires the \pkg{akima}
+    package
+ }
 }
 \details{
   These functions provide data to PL for Gaussian progress regression

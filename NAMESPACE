@@ -18,9 +18,9 @@ export(EI, data.GP, data.GP.improv, PL, dist2covar.symm, papply,
        covar, init.ConstGP, renorm.lweights, covar.sep, init.GP,
        renorm.weights, covar.sim, latents.CGP, resample, cv.folds, 
        lpost.GP, tquants, lpredprob.GP, data.CGP, lpredprob.CGP,
-       data.CGP.adapt, lpredprob.ConstGP)
+       data.CGP.adapt, lpredprob.ConstGP, PL.env)
 
 # Import all packages listed as Imports or Depends
-import(mvtnorm,  tgp)
+import(mvtnorm, tgp)
 
 # no S3 methods

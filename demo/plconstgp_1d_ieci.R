@@ -6,8 +6,9 @@
 library(plgp)
 library(tgp)
 
-## close down old graphics windows
+## close down old graphics windows and clear session
 graphics.off()
+rm(list=ls())
 
 ## for calculating 1-d data under a constraint
 f1dc <- function(x)
@@ -39,7 +40,7 @@ start <- 20
 end <- 50
 
 ## run PL
-out <- PL(data=data.ConstGP.improv, ## adaptive design PL via IECI
+out <- PL(dstream=data.ConstGP.improv, ## adaptive design PL via IECI
           start=start, end=end,
           init=draw.ConstGP,  ## init with Metropolis-Hastings
           lpredprob=lpredprob.ConstGP, propagate=propagate.ConstGP,
@@ -54,13 +55,13 @@ XXs <- rectscale(XX, rect)
 outp <- papply(XX=XXs, fun=pred.ConstGP, prior=prior)
 
 ## put X back on original scale
-X <- rectunscale(pall$X, rect)
+X <- rectunscale(PL.env$pall$X, rect)
 
 ## set up to make four plots
 par(mfrow=c(2,2))
 
 ## plot the individual lines of the predictive distribution
-plot(X,pall$Y, main="predictive: each particle", xlab="x", ylab="y")
+plot(X, PL.env$pall$Y, main="predictive: each particle", xlab="x", ylab="y")
 for(i in 1:length(outp)) {
   lines(XX, outp[[i]]$m)
   lines(XX, outp[[i]]$q1, col=2, lty=2)
@@ -83,7 +84,7 @@ q2 <- q2 / length(outp)
 
 ## plot the summary stats of the predictive distribution
 ## pdf("taddy_avg.pdf", width=5.5, height=5.5)
-plot(X, pall$Y, main="predictive surface",
+plot(X, PL.env$pall$Y, main="predictive surface",
      ylim=range(c(q1,q2)), xlab="x", ylab="z")
 lines(XX, m, lwd=2)
 lines(XX, q1, col=2, lty=2, lwd=2)
@@ -114,10 +115,10 @@ par(mfrow=c(1,2)) ## two plots
 plot(X, xlab="t", ylab="x", main="progress over time")
 abline(v=start+1, lwd=2, col=2, lty=2)
 abline(h=c(2,4), lwd=2, col=3, lty=3)
-points((start+1):end, psave$xstar, col=4, pch=18)
+points((start+1):end, PL.env$psave$xstar, col=4, pch=18)
 ## plot the progress meter
 ## pdf("taddy_progress.pdf", width=5.5, height=5.5)
-plot(1:end, c(rep(NA, start), psave$max.as), type="l", lwd=2,
+plot(1:end, c(rep(NA, start), PL.env$psave$max.as), type="l", lwd=2,
      xlab="t", ylab="max log IECI",
      main="progress meter") 
 abline(v=start+1, lwd=2, col=2, lty=2)

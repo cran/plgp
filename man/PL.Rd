@@ -1,6 +1,7 @@
 \name{PL}
 \alias{PL}
 \alias{plgp}
+\alias{PL.env}
 \title{
 Particle Learning Skeleton Method
 }
@@ -10,14 +11,14 @@ Particle Learning Skeleton Method
   propagate steps
 }
 \usage{
-PL(data, start, end, init, lpredprob, propagate, prior = NULL,
+PL(dstream, start, end, init, lpredprob, propagate, prior = NULL,
    addpall = NULL, params = NULL, save = NULL, P = 100,
    progress = 10, cont = FALSE, verb = 1)
 }
 %- maybe also 'usage' for other objects documented here.
 \arguments{
-  \item{data}{
-    function generating the data; for examples see \code{\link{data.GP}}
+  \item{dstream}{
+    function generating the data stream; for examples see \code{\link{data.GP}}
   }
   \item{start}{
     a scalar \code{integer} specifying the starting \dQuote{time};
@@ -44,13 +45,14 @@ PL(data, start, end, init, lpredprob, propagate, prior = NULL,
   }
   \item{prior}{
     function used to generate prior parameters that may be
-    passed into the \code{data}, \code{init},
+    passed into the \code{dstream}, \code{init},
     \code{lpredprob} and \code{propagate}
     functions as needed; for examples see \code{\link{prior.GP}}
   }
   \item{addpall}{
     an optional function that adds the new observation (usually
-    the next one in \dQuote{time}) to the global \code{pall} variable
+    the next one in \dQuote{time}) to the  \code{pall} variable
+    in the \code{PL.env} environment (i.e., \code{PL.env$pall}),
     which stores the sufficient information shared by all particles;
     for examples see \code{\link{addpall.GP}}
   }
@@ -88,10 +90,12 @@ PL(data, start, end, init, lpredprob, propagate, prior = NULL,
   arguments/functions which execute the calculations needed in the
   re-sample and propagate steps.
 
-  PL and uses the global variables \code{pall}, containing
+  PL and uses the variables stored in the \code{PL.env} environment:
+  \code{pall}, containing
   sufficient information common to all particles, \code{peach},
   containing sufficient information particular to each of the \code{P}
-  particles, and \code{psave} containing any saved information.
+  particles, and \code{psave} containing any saved information.  
+  These variables may be accessed as \code{PL.env$psave}, for example.
 
   Note that PL is designed to be fast for sequential updating
   (of GPs) when new data arrive.  This facilitates efficient sequential
@@ -102,7 +106,7 @@ PL(data, start, end, init, lpredprob, propagate, prior = NULL,
   in batch
 }
 \value{
-  PL only returns the \code{peach} global variable, containing sufficient
+  PL modifies the \code{PL.env$peach} variable, containing sufficient
   information particular to each (of the \code{P}) particles
 }
 \references{

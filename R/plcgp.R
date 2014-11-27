@@ -22,11 +22,6 @@
 #*******************************************************************************
 
 
-## visible definition for R CMD CHECK
-Xcand <- NULL
-rm(Xcand)
-
-
 ## lpredprob.CGP:
 ##
 ## for the PL resample step -- evaluate the (log) predictive
@@ -120,7 +115,7 @@ draw.CGP <- function(Zt, prior, l=3, h=4, thin=10)
     if(is.null(Zt)) return(init.CGP(prior))
     
     ## create a Y matrix
-    Y <- matrix(NA, nrow=nrow(pall$X), ncol=length(Zt))
+    Y <- matrix(NA, nrow=nrow(PL.env$pall$X), ncol=length(Zt))
     Y[,1] <- 0
     
     ## extract each Y & draw parameters of the each GP
@@ -138,10 +133,10 @@ draw.CGP <- function(Zt, prior, l=3, h=4, thin=10)
           fout <- folds[[i]]; fin <- (1:nrow(Y))[-fout]
 
           ## calculate the predictive of the new latsents
-          tp <- pred.GP(pall$X[fout,], Zt[[j]], prior, Y[,j], Sigma=TRUE, sub=fin)
+          tp <- pred.GP(PL.env$pall$X[fout,], Zt[[j]], prior, Y[,j], Sigma=TRUE, sub=fin)
           
           ## calculate the probability of fout classes under the old Ys
-          Yj.old <- Y[fout,j]; Yc <- Y[fout,pall$C[fout]]
+          Yj.old <- Y[fout,j]; Yc <- Y[fout,PL.env$pall$C[fout]]
           if(length(fout) > 1) { Yc <- diag(Yc); Ya <- Y[fout,] }
           else Ya <- matrix(Y[fout,], nrow=length(fout))
           pold <- prod(exp(-Yc) / apply(exp(-Ya), 1, sum))
@@ -152,7 +147,7 @@ draw.CGP <- function(Zt, prior, l=3, h=4, thin=10)
           if(any(!is.finite(exp(-Yj.prop)))) stop("bad Y draw")
 
           ## calculate probability of fout classes under new Ys
-          Y[fout,j] <- Yj.prop; Yc <- Y[fout,pall$C[fout]]
+          Y[fout,j] <- Yj.prop; Yc <- Y[fout,PL.env$pall$C[fout]]
           if(length(fout) > 1) { Yc <- diag(Yc); Ya <- Y[fout,] }
           else Ya <- matrix(Y[fout,], nrow=length(fout))
           pnew <- prod(exp(-Yc) / apply(exp(-Ya), 1, sum))
@@ -185,9 +180,9 @@ init.CGP <- function(prior, d=NULL, g=NULL)
   {
     ## check to make sure all classes are represented
     ## with a coding starting from one
-    numclass <- length(unique(pall$C))
-    if(any(pall$C <= 0 || pall$C > numclass))
-      stop("pall$C should range from 1 to numclass")
+    numclass <- length(unique(PL.env$pall$C))
+    if(any(PL.env$pall$C <= 0 || PL.env$pall$C > numclass))
+      stop("PL.env$pall$C should range from 1 to numclass")
 
     ## default d ang if not specified
     if(is.null(d)) d <- 1/prior$drate
@@ -200,10 +195,10 @@ init.CGP <- function(prior, d=NULL, g=NULL)
 
       ## initial GP parameters
       Zt[[i]] <- list(d=d, g=g)
-      Zt[[i]]$t <- nrow(pall$X)
+      Zt[[i]]$t <- nrow(PL.env$pall$X)
 
       ## initial latent variables
-      Y <- 10*(pall$C == i)
+      Y <- 10*(PL.env$pall$C == i)
       Y[Y==0] <- rnorm(sum(Y==0), mean=-10, sd=1)
 
       ## calculate the sufficient statistics
@@ -230,7 +225,7 @@ init.CGP <- function(prior, d=NULL, g=NULL)
 pred.CGP <- function(XX, Zt, prior, mcreps=100, cs=NULL)
   {
     ## coerse the XX input
-    XX <- matrix(XX, ncol=ncol(pall$X))
+    XX <- matrix(XX, ncol=ncol(PL.env$pall$X))
     
     ## allocate space for multinomial distn for each XX[i,]
     I <- nrow(XX)
@@ -283,15 +278,15 @@ pred.CGP <- function(XX, Zt, prior, mcreps=100, cs=NULL)
 params.CGP <- function()
   {
     ## extract dimensions
-    P <- length(peach)
-    numGP <- length(peach[[1]])-1
+    P <- length(PL.env$peach)
+    numGP <- length(PL.env$peach[[1]])-1
 
     ## allocate data frame (DF) to hold parameters
     params <- data.frame(matrix(NA, nrow=P, ncol=3*numGP))
 
     ## get the names of the parameters, and set them in the DF
     nam <- c()
-    for(i in 2:length(peach[[1]])) {
+    for(i in 2:length(PL.env$peach[[1]])) {
       nam <- c(nam, paste(c("d.", "g.", "lpost."), i, sep=""))
     }
     names(params) <- nam
@@ -299,9 +294,9 @@ params.CGP <- function()
     ## collect the parameters from the particles
     for(p in 1:P) {
       for(i in 1:numGP) {
-        params[p,(i-1)*3+1] <- mean(peach[[p]][[i+1]]$d)
-        params[p,(i-1)*3+2] <- peach[[p]][[i+1]]$g
-        params[p,(i-1)*3+3] <- peach[[p]][[i+1]]$lpost
+        params[p,(i-1)*3+1] <- mean(PL.env$peach[[p]][[i+1]]$d)
+        params[p,(i-1)*3+2] <- PL.env$peach[[p]][[i+1]]$g
+        params[p,(i-1)*3+3] <- PL.env$peach[[p]][[i+1]]$lpost
       }
     }
 
@@ -317,18 +312,18 @@ params.CGP <- function()
 latents.CGP <- function()
   {
     ## not sure yet what to put here.
-    P <- length(peach)
+    P <- length(PL.env$peach)
     Y <- list()
     nam <- paste("Y.", 1:ncol(Y), sep="")
-    for(j in 2:length(peach[[1]])) {
-      Y[[j]] <- data.frame(matrix(NA, nrow=P, ncol=nrow(pall$X)))
+    for(j in 2:length(PL.env$peach[[1]])) {
+      Y[[j]] <- data.frame(matrix(NA, nrow=P, ncol=nrow(PL.env$pall$X)))
       names(Y[[j]]) <- nam
     }
 
     ## collect the latents from the particles
     for(p in 1:P)
-      for(j in 2:length(peach[[1]]))
-        Y[[j]][p,] <- peach[[p]][[j]]$Y
+      for(j in 2:length(PL.env$peach[[1]]))
+        Y[[j]][p,] <- PL.env$peach[[p]][[j]]$Y
 
     ## return the latents
     return(Y)
@@ -358,10 +353,10 @@ data.CGP <- function(begin, end=NULL, X, C)
 
 addpall.CGP <- function(Z)
   {
-    pall$X <<- rbind(pall$X, Z$x)
-    pall$C <<- c(pall$C, Z$c)
-    pall$D <<- distance(pall$X)
-    if(!is.null(Z$y)) pall$Y <<- c(pall$Y, Z$y)
+    PL.env$pall$X <- rbind(PL.env$pall$X, Z$x)
+    PL.env$pall$C <- c(PL.env$pall$C, Z$c)
+    PL.env$pall$D <- distance(PL.env$pall$X)
+    if(!is.null(Z$y)) PL.env$pall$Y <- c(PL.env$pall$Y, Z$y)
   }
 
 
@@ -374,7 +369,7 @@ entropy.adapt <- function(Xcand, rect, prior, verb)
   {
     ## calculate the average maximum entropy point
     if(verb > 0)
-      cat("taking design point ", nrow(pall$X)+1, " by ME\n", sep="")
+      cat("taking design point ", nrow(PL.env$pall$X)+1, " by ME\n", sep="")
     
     ## get predictive distribution information
     outp <- papply(XX=rectscale(Xcand, rect), fun=pred.CGP, prior=prior)
@@ -398,14 +393,14 @@ entropy.adapt <- function(Xcand, rect, prior, verb)
 ## the next adaptive sample from the posterior predictive
 ## distribution based on the class-entropy
 
-data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2)
+data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2, interp=interp.loess)
   {
     if(!is.null(end) && begin > end) stop("must have begin <= end")
     else if(is.null(end) || begin == end) { ## adaptive sample
 
       ## choose some adaptive sampling candidates
       if(class(cands) == "function") Xc <- cands()
-      else if(is.na(cands)) Xc <- Xcand
+      else if(is.na(cands)) Xc <- PL.env$Xcand
       else Xc <- lhs(cands, rect)
       ## Xc <- dopt.gp(n=cands, X=NULL, Xc=lhs(10*cands, rect))$XX
 
@@ -418,13 +413,13 @@ data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2)
       xs <- rectscale(x, rect)
 
       ## possibly remove the candidate from a fixed set
-      if(class(cands) != "function" && is.na(cands)) Xcand <<- Xcand[-indx,]
+      if(class(cands) != "function" && is.na(cands)) PL.env$Xcand <- PL.env$Xcand[-indx,]
       
       ## maybe plot something
       if(verb > 1) {
         par(mfrow=c(1,1))
         image(interp(Xc[,1], Xc[,2], as))
-        points(rectunscale(pall$X, rect))
+        points(rectunscale(PL.env$pall$X, rect))
         points(x[,1], x[,2], pch=18, col="green")
       }
 
@@ -439,13 +434,13 @@ data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2)
       ## if(verb > 0) cat("initializing with size", end-begin+1, "LHS\n")
       if(verb > 0) cat("initializing with size", end-begin+1, "MES\n")
       ## X <- lhs(end-begin+1, rect)
-      if(class(cands) != "function" && is.na(cands)) Xc <- Xcand
+      if(class(cands) != "function" && is.na(cands)) Xc <- PL.env$Xcand
       else Xc <- lhs(10*(end-begin+1), rect)
       out <- dopt.gp(end-begin+1, X=NULL, Xcand=Xc)
       X <- out$XX
 
        ## possibly remove the candidate from a fixed set
-      if(class(cands) != "function" && is.na(cands)) Xcand <<- Xcand[-out$fi,]
+      if(class(cands) != "function" && is.na(cands)) PL.env$Xcand <- PL.env$Xcand[-out$fi,]
       
       ## get the class labels
       fX <- f(X)
@@ -464,9 +459,9 @@ getmap.CGP <- function(cl=2)
   {
     ## calculate the MAP particle
     mi <- 1
-    if(length(peach) > 1) {
-      for(p in 2:length(peach))
-        if(peach[[p]][[cl]]$lpost > peach[[mi]][[cl]]$lpost) mi <- p
+    if(length(PL.env$peach) > 1) {
+      for(p in 2:length(PL.env$peach))
+        if(PL.env$peach[[p]][[cl]]$lpost > PL.env$peach[[mi]][[cl]]$lpost) mi <- p
     }
-    return(peach[[mi]])
+    return(PL.env$peach[[mi]])
   }

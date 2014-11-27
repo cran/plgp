@@ -119,7 +119,7 @@ init.ConstGP <- function(prior)
 
 pred.ConstGP <- function(XX, Zt, prior, quants=TRUE)
   {
-    GPp <- pred.GP(XX, Zt[[1]], prior$GP, Y=pall$Y, quants=quants)
+    GPp <- pred.GP(XX, Zt[[1]], prior$GP, Y=PL.env$pall$Y, quants=quants)
     CGPp <- pred.CGP(XX, Zt, prior$CGP)
     return(cbind(GPp, CGPp))
   }
@@ -139,10 +139,10 @@ ieci.ConstGP <- function(Xcand, Zt, prior, Y=NULL, verb=1)
     ieci <- ieci.GP(Xcand=Xcand, Xref=Xcand, Zt[[1]], prior$GP, Y, w=pc2, verb)
 
     ## calculate in the EI part
-    outp <- pred.GP(XX=Xcand, Zt=Zt[[1]], prior=prior$GP, Y=pall$Y, quants=FALSE)
+    outp <- pred.GP(XX=Xcand, Zt=Zt[[1]], prior=prior$GP, Y=PL.env$pall$Y, quants=FALSE)
 
     ## add in the EI part
-    ieci <- mean(calc.eis(outp, min(outp$m), pc2)) - ieci
+    ieci <- mean(calc.eis(outp[,1:3], min(outp$m), pc2)) - ieci
 
     ## zero out any negative ones (could be -Inf if numerical problems in C)
     ieci[ieci < 0] <- 0
@@ -169,7 +169,7 @@ alc.ConstGP <- function(Xcand, Zt, prior, Y=NULL, verb=1)
     alc <- alc.GP(Xcand=Xcand, Xref=Xcand, Zt[[1]], prior$GP, Y, w=pc2, verb)
 
     ## calculate in the EI part
-    outp <- pred.GP(XX=Xcand, Zt=Zt[[1]], prior=prior$GP, Y=pall$Y, quants=FALSE)
+    outp <- pred.GP(XX=Xcand, Zt=Zt[[1]], prior=prior$GP, Y=PL.env$pall$Y, quants=FALSE)
 
     ## add in the ALC part
     alc <- mean(calc.vars(outp, pc2)) - alc
@@ -189,15 +189,15 @@ alc.ConstGP <- function(Xcand, Zt, prior, Y=NULL, verb=1)
 params.ConstGP <- function()
   {
     ## extract dimensions
-    P <- length(peach)
-    numGP <- length(peach[[1]])
+    P <- length(PL.env$peach)
+    numGP <- length(PL.env$peach[[1]])
 
     ## allocate data frame (DF) to hold parameters
     params <- data.frame(matrix(NA, nrow=P, ncol=3*numGP))
 
     ## get the names of the parameters, and set them in the DF
     nam <- c()
-    for(i in 1:length(peach[[1]])) {
+    for(i in 1:length(PL.env$peach[[1]])) {
       nam <- c(nam, paste(c("d.", "g.", "lpost."), i, sep=""))
     }
     names(params) <- nam
@@ -205,9 +205,9 @@ params.ConstGP <- function()
     ## collect the parameters from the particles
     for(p in 1:P) {
       for(i in 1:numGP) {
-        params[p,(i-1)*3+1] <- mean(peach[[p]][[i]]$d)
-        params[p,(i-1)*3+2] <- peach[[p]][[i]]$g
-        params[p,(i-1)*3+3] <- peach[[p]][[i]]$lpost
+        params[p,(i-1)*3+1] <- mean(PL.env$peach[[p]][[i]]$d)
+        params[p,(i-1)*3+2] <- PL.env$peach[[p]][[i]]$g
+        params[p,(i-1)*3+3] <- PL.env$peach[[p]][[i]]$lpost
       }
     }
 
@@ -239,10 +239,10 @@ data.ConstGP <- function(begin, end=NULL, X, Y, C)
 
 addpall.ConstGP <- function(Z)
   {
-    pall$X <<- rbind(pall$X, Z$x)
-    pall$C <<- c(pall$C, Z$c)
-    pall$Y <<- c(pall$Y, Z$y)
-    pall$D <<- NULL
+    PL.env$pall$X <- rbind(PL.env$pall$X, Z$x)
+    PL.env$pall$C <- c(PL.env$pall$C, Z$c)
+    PL.env$pall$Y <- c(PL.env$pall$Y, Z$y)
+    PL.env$pall$D <- NULL
   }
 
 
@@ -256,43 +256,43 @@ addpall.ConstGP <- function(Z)
 
 data.ConstGP.improv <- function(begin, end=NULL, f, rect, prior,
                                 adapt=ieci.const.adapt, cands=40, save=TRUE, 
-                                oracle=TRUE, verb=2)
+                                oracle=TRUE, verb=2, interp=interp.loess)
   {
     if(!is.null(end) && begin > end) stop("must have begin <= end")
     else if(is.null(end) || begin == end) { ## adaptive sample
 
       ## choose some adaptive sampling candidates
-      Xcand <- lhs(cands, rect)
+      PL.env$Xcand <- lhs(cands, rect)
 
       ## add a cleverly chosen candidate
       if(oracle) {
-        xstars <- findmin.ConstGP(pall$X[nrow(pall$X),], prior)
+        xstars <- findmin.ConstGP(PL.env$pall$X[nrow(PL.env$pall$X),], prior)
         xstar <- drop(rectunscale(rbind(xstars), rect))
-        Xcand <- rbind(Xcand, xstar)
+        PL.env$Xcand <- rbind(PL.env$Xcand, xstar)
       }
       
       ## calculate the index with the best IECI
-      as <- adapt(Xcand, rect, prior, verb)
+      as <- adapt(PL.env$Xcand, rect, prior, verb)
       indx <- which.max(as)
       
       ## return the new adaptive sample
-      x <- matrix(Xcand[indx,], nrow=1)
+      x <- matrix(PL.env$Xcand[indx,], nrow=1)
       xs <- rectscale(x, rect)
 
       ## maybe plot something
       if(verb > 1) {
         par(mfrow=c(1,1))
-        if(ncol(Xcand) > 1) { ## 2-d+ data
-          image(interp(Xcand[,1], Xcand[,2], as))
-          points(rectunscale(pall$X, rect))
-          points(Xcand, pch=18)
+        if(ncol(PL.env$Xcand) > 1) { ## 2-d+ data
+          image(interp(PL.env$Xcand[,1], PL.env$Xcand[,2], as))
+          points(rectunscale(PL.env$pall$X, rect))
+          points(PL.env$Xcand, pch=18)
           if(oracle) points(xstar[1], xstar[2], pch=17, col="blue")
           points(x[,1], x[,2], pch=18, col="green")
         } else { ## 1-d data
-          o <- order(drop(Xcand))
-          plot(drop(Xcand[o,]), as[o], type="l", lwd=2,
+          o <- order(drop(PL.env$Xcand))
+          plot(drop(PL.env$Xcand[o,]), as[o], type="l", lwd=2,
                xlab="x", ylab="constrained IECI")
-          points(drop(rectunscale(pall$X, rect)), rep(min(as), nrow(pall$X)))
+          points(drop(rectunscale(PL.env$pall$X, rect)), rep(min(as), nrow(PL.env$pall$X)))
           points(x, min(as), pch=18, col="green")
           if(oracle) points(xstar, min(as), pch=17, col="blue")
           legend("topright", c("chosen point", "oracle candidate"),
@@ -302,8 +302,8 @@ data.ConstGP.improv <- function(begin, end=NULL, f, rect, prior,
 
       ## maybe save the max log IECI and xstar
       if(save) {
-        if(oracle) psave$xstar <<- rbind(psave$xstar, xstar)
-        psave$max.as <<- c(psave$max.as, max(as))
+        if(oracle) PL.env$psave$xstar <- rbind(PL.env$psave$xstar, xstar)
+        PL.env$psave$max.as <- c(PL.env$psave$max.as, max(as))
       }
 
       ## return the adaptively chosen location
@@ -333,7 +333,7 @@ ieci.const.adapt <- function(Xcand, rect, prior, verb)
   {
     ## calculate the average maximum entropy point
     if(verb > 0)
-      cat("taking design point ", nrow(pall$X)+1, " by constained IECI\n", sep="")
+      cat("taking design point ", nrow(PL.env$pall$X)+1, " by constained IECI\n", sep="")
 
     ## adjust the candidates (X) and reference locations (Xref)
     Xcands <- rectscale(Xcand, rect)
@@ -361,7 +361,7 @@ alc.const.adapt <- function(Xcand, rect, prior, verb)
   {
     ## calculate the average maximum entropy point
     if(verb > 0)
-      cat("taking design point ", nrow(pall$X)+1, " by constained ALC\n", sep="")
+      cat("taking design point ", nrow(PL.env$pall$X)+1, " by constained ALC\n", sep="")
 
     ## adjust the candidates (X) and reference locations (Xref)
     Xcands <- rectscale(Xcand, rect)
@@ -386,16 +386,16 @@ alc.const.adapt <- function(Xcand, rect, prior, verb)
 
 findmin.ConstGP <- function(xstart, prior)
   {
-    m <- ncol(pall$X)
+    m <- ncol(PL.env$pall$X)
 
     ## calculate the MAP particule
     mi <- 1
-    for(p in 2:length(peach))
-      if(peach[[p]][[1]]$lpost > peach[[mi]][[1]]$lpost) mi <- p
-    Zt <- peach[[mi]][[1]]
+    for(p in 2:length(PL.env$peach))
+      if(PL.env$peach[[p]][[1]]$lpost > PL.env$peach[[mi]][[1]]$lpost) mi <- p
+    Zt <- PL.env$peach[[mi]][[1]]
     
     ## utility for calculations below
-    util <- util.GP(Zt, prior$GP, pall$Y, retKi=TRUE)
+    util <- util.GP(Zt, prior$GP, PL.env$pall$Y, retKi=TRUE)
 
     ## call the optim function
     xstar <- optim(xstart, pred.mean.GP, method="L-BFGS-B",

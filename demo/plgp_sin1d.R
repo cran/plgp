@@ -3,9 +3,13 @@
 
 ## load the plgp library
 library(plgp)
+library(tgp) ## for the mean0.range1 function
+## if mean0.range1 is not in the tgp NAMESPACE you may have
+## to copy the source over manually
 
-## close down old graphics windows
+## close down old graphics windows and clear session
 graphics.off()
+rm(list=ls())
 
 ## set up 1-d Sinusoidal data following Gramacy & Lee (2007)
 fsin <- function(X){ return((sin(pi*X/5) + 0.2*cos(4*pi*X/5))) }
@@ -30,7 +34,7 @@ start <- ncol(Xs) + 3
 end <- nrow(Xs)
 
 ## Particle Learning Inference!
-out <- PL(data=data.GP, ## static PL
+out <- PL(dstream=data.GP, ## static PL
           start=start, end=end,
           init=draw.GP,  ## initializing with Metropolis-Hastings
           lpredprob=lpredprob.GP, propagate=propagate.GP,
@@ -45,10 +49,10 @@ YY <- fsin(XX)
 YYs <- mean0.range1(YY)$X  
 
 ## sample from the particle posterior predictive distribution 
-outp <- papply(XX=XXs, fun=pred.GP, Y=pall$Y, quants=TRUE, prior=prior)
+outp <- papply(XX=XXs, fun=pred.GP, Y=PL.env$pall$Y, quants=TRUE, prior=prior)
 
 ## unscale the data locations
-X <- rectunscale(pall$X, rect)
+X <- rectunscale(PL.env$pall$X, rect)
 
 ## set up to make two plots
 par(mfrow=c(1,2))
@@ -95,5 +99,6 @@ hist(params$d)
 hist(params$g)
 
 ## make a plot of the joint samples of d and g
+par(mfrow=c(1,1))  ## back to one plot
 plot(params$d, params$g, xlab="d", ylab="g",
      main="Samples of range (d) and nugget (g)")

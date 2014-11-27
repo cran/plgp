@@ -31,7 +31,7 @@
 lpredprob.GP <- function(z, Zt, prior)
   {
     ## get the parameters to the predictive equations
-    tp <- pred.GP(z$x, Zt, prior, pall$Y)
+    tp <- pred.GP(z$x, Zt, prior, PL.env$pall$Y)
     
     ## calculate the predictive probability
     return(dt((z$y - tp$m)/sqrt(tp$s2), tp$df, log=TRUE))
@@ -50,7 +50,7 @@ propagate.GP <- function(z, Zt, prior)
     Zt$t <- Zt$t + 1
     
     ## call the update function on new data
-    Zt <- updat.GP(Zt, prior, pall$Y)
+    Zt <- updat.GP(Zt, prior, PL.env$pall$Y)
     
     ## propose changes to the correlation parameters
     Zt <- draw.GP(Zt, prior, l=3, h=4, thin=1)
@@ -121,7 +121,7 @@ draw.GP <- function(Zt, prior, l=3, h=4, thin=10, Y=NULL)
     if(any(prior$drate < 0) && prior$grate < 0) return(Zt)
     
     ## determine which Y to use
-    if(is.null(Y)) Y <- pall$Y
+    if(is.null(Y)) Y <- PL.env$pall$Y
     else Zt <- updat.GP(Zt, prior, Y)
 
     ## increase thin in sim case
@@ -181,8 +181,8 @@ lpost.GP <- function(n, m, Vb, phi, ldetK, d, g, prior)
     
     ## deal with the prior (uniform in the range)
     lp <- 0
-    if(prior$grate > 0) lp <- lp + sum(dexp(abs(d), rate=prior$drate, log=TRUE))
-    if(prior$grate > 0) lp <- lp + dexp(g, rate=prior$grate, log=TRUE)
+    if(all(prior$drate > 0)) lp <- lp + sum(dexp(abs(d), rate=prior$drate, log=TRUE))
+    if(prior$grate > 0) lp <- lp + dexp(abs(g), rate=prior$grate, log=TRUE)
     
     ## deal with the (integrated) likelihood part
     lp <- lp + 0.5* (det(Vb, log=TRUE) - (n-m)*log(2*pi))
@@ -211,7 +211,7 @@ updat.GP <- function(Zt, prior, Y)
     util <- util.GP(Zt, prior, Y, ldetK=TRUE)
 
     ## update the calculation of the posterior probability
-    Zt$lpost <- lpost.GP(Zt$t, ncol(pall$X), util$Vb, util$phi,
+    Zt$lpost <- lpost.GP(Zt$t, ncol(PL.env$pall$X), util$Vb, util$phi,
                          util$ldetK, Zt$d, Zt$g, prior)
 
     return(Zt)
@@ -226,7 +226,7 @@ updat.GP <- function(Zt, prior, Y)
 init.GP <- function(prior, d=NULL, g=NULL, Y=NULL)
   {
     ## determine which Y to use
-    if(is.null(Y)) Y <- pall$Y
+    if(is.null(Y)) Y <- PL.env$pall$Y
 
     ## defaults from prior
     if(is.null(d)) {
@@ -239,8 +239,8 @@ init.GP <- function(prior, d=NULL, g=NULL, Y=NULL)
 
     ## initialize particle parameters
     Zt <- list(d=d, g=g)
-    if(!is.null(pall$Y)) Zt$t <- sum(!is.na(pall$Y))
-    else Zt$t <- nrow(pall$X)
+    if(!is.null(PL.env$pall$Y)) Zt$t <- sum(!is.na(PL.env$pall$Y))
+    else Zt$t <- nrow(PL.env$pall$X)
 
     ## calculate the sufficient statistics
     Zt <- updat.GP(Zt, prior, Y)
@@ -260,10 +260,10 @@ pred.GP <- function(XX, Zt, prior, Y=NULL, quants=FALSE,
                        Sigma=FALSE, sub=1:Zt$t)
   {
     ## get the right X and Y
-    if(is.null(Y)) Y <- pall$Y
+    if(is.null(Y)) Y <- PL.env$pall$Y
     
     ## coerse the XX input
-    XX <- matrix(XX, ncol=ncol(pall$X))
+    XX <- matrix(XX, ncol=ncol(PL.env$pall$X))
 
     ## allocate space for the Student-t parameters
     ## from each particle
@@ -272,18 +272,18 @@ pred.GP <- function(XX, Zt, prior, Y=NULL, quants=FALSE,
     
     ## predictive degrees of freedom
     if(prior$bZero) m <- 0
-    else m <- ncol(pall$X)
+    else m <- ncol(PL.env$pall$X)
     tdf <- Zt$t - m - 1
 
     ## utility for calculations below
     if(prior$cov == "isotropic") { ## isotropic
-      k <- covar(X1=pall$X[sub,], X2=XX, d=Zt$d, g=0)
+      k <- covar(X1=PL.env$pall$X[sub,], X2=XX, d=Zt$d, g=0)
       kk <- drop(covar(X1=XX, d=Zt$d, g=Zt$g))
     } else if(prior$cov == "separable") { ## separable
-      k <- covar.sep(X1=pall$X[sub,], X2=XX, d=Zt$d, g=0)
+      k <- covar.sep(X1=PL.env$pall$X[sub,], X2=XX, d=Zt$d, g=0)
       kk <- drop(covar.sep(X1=XX, d=Zt$d, g=Zt$g))
     } else { ## sim (rank 1)
-      k <- covar.sim(X1=pall$X[sub,], X2=XX, d=Zt$d, g=0)
+      k <- covar.sim(X1=PL.env$pall$X[sub,], X2=XX, d=Zt$d, g=0)
       kk <- drop(covar.sim(X1=XX, d=Zt$d, g=Zt$g))
     }
 
@@ -317,6 +317,12 @@ pred.GP <- function(XX, Zt, prior, Y=NULL, quants=FALSE,
       if(any(!is.finite(ts2))) stop("bad ts2")
       pred.df <- data.frame(m=tm, s2=ts2, df=tdf)
     }
+
+    ## maybe append condnum
+    if(!is.null(util$condnum)) {
+      if(Sigma) pred.df$condnum <- rep(util$condnum, nrow(XX))
+      else pred.df <- cbind(pred.df, data.frame(condnum=rep(util$condnum, nrow(pred.df))))
+    }
     
     ## get quantiles
     if(quants) {
@@ -337,25 +343,25 @@ pred.GP <- function(XX, Zt, prior, Y=NULL, quants=FALSE,
 ieci.GP <- function(Xcand, Xref, Zt, prior, Y=NULL, w=NULL, verb=1)
   {
     ## get the right Y
-    if(is.null(Y)) Y <- pall$Y
+    if(is.null(Y)) Y <- PL.env$pall$Y
     
     ## coerse the Xcand & Xref input
-    Xcand <- matrix(Xcand, ncol=ncol(pall$X))
-    Xref <- matrix(Xref, ncol=ncol(pall$X))
+    Xcand <- matrix(Xcand, ncol=ncol(PL.env$pall$X))
+    Xref <- matrix(Xref, ncol=ncol(PL.env$pall$X))
 
     ## predictive degrees of freedom
     if(prior$bZero) m <- 0
-    else m <- ncol(pall$X)
+    else m <- ncol(PL.env$pall$X)
     tdf <- Zt$t - m - 1
     util <- util.GP(Zt, prior, Y, retKi=TRUE)
 
     ## utility for calculations below
     if(prior$cov == "isotropic") { ## isotropic
-      k <- covar(X1=pall$X, X2=Xref, d=Zt$d, g=0)#g=Zt$g)
+      k <- covar(X1=PL.env$pall$X, X2=Xref, d=Zt$d, g=0)#g=Zt$g)
     } else if(prior$cov == "separable") { ## separable
-      k <- covar.sep(X1=pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
+      k <- covar.sep(X1=PL.env$pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
     } else { ## sim (rank 1)
-      k <- covar.sim(X1=pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
+      k <- covar.sim(X1=PL.env$pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
     }
 
     ## build up the K quantities
@@ -369,14 +375,14 @@ ieci.GP <- function(Xcand, Xref, Zt, prior, Y=NULL, w=NULL, verb=1)
     tm <- drop(FF %*% util$bmu + ktKiYmFbmu)
     if(any(!is.finite(tm))) stop("bad tm")
 
-    ## this assumes that Xref is representative of pall$X
+    ## this assumes that Xref is representative of PL.env$pall$X
     fmin <- min(tm)
 
     ## initial steps in the predictive variance calculation
     badj <- 1 + diag(FF %*% util$Vb %*% t(FF))  ## could be simplified further
     
     ## IECI calculation for each entry in Xcand
-    ieci <- calc.iecis(ktKik, k, Xcand, pall$X, util$Ki, Xref, Zt$d, Zt$g,
+    ieci <- calc.iecis(ktKik, k, Xcand, PL.env$pall$X, util$Ki, Xref, Zt$d, Zt$g,
                        prior$s2p, util$phi, badj, tm, tdf, fmin, w, verb)
 
     ## sanity checks
@@ -395,25 +401,25 @@ ieci.GP <- function(Xcand, Xref, Zt, prior, Y=NULL, w=NULL, verb=1)
 alc.GP <- function(Xcand, Xref, Zt, prior, Y=NULL, w=NULL, verb=1)
   {
     ## get the right Y
-    if(is.null(Y)) Y <- pall$Y
+    if(is.null(Y)) Y <- PL.env$pall$Y
     
     ## coerse the Xcand & Xref input
-    Xcand <- matrix(Xcand, ncol=ncol(pall$X))
-    Xref <- matrix(Xref, ncol=ncol(pall$X))
+    Xcand <- matrix(Xcand, ncol=ncol(PL.env$pall$X))
+    Xref <- matrix(Xref, ncol=ncol(PL.env$pall$X))
 
     ## predictive degrees of freedom
     if(prior$bZero) m <- 0
-    else m <- ncol(pall$X)
+    else m <- ncol(PL.env$pall$X)
     tdf <- Zt$t - m - 1
     util <- util.GP(Zt, prior, Y, retKi=TRUE)
 
     ## utility for calculations below
     if(prior$cov == "isotropic") { ## isotropic
-      k <- covar(X1=pall$X, X2=Xref, d=Zt$d, g=0)#g=Zt$g)
+      k <- covar(X1=PL.env$pall$X, X2=Xref, d=Zt$d, g=0)#g=Zt$g)
     } else if(prior$cov == "separable") { ## separable
-      k <- covar.sep(X1=pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
+      k <- covar.sep(X1=PL.env$pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
     } else { ## sim (rank 1)
-      k <- covar.sim(X1=pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
+      k <- covar.sim(X1=PL.env$pall$X, X2=Xref, d=Zt$d, g=0)#, g=Zt$g)
     }
 
     ## initial steps in the predictive variance calculation
@@ -421,7 +427,7 @@ alc.GP <- function(Xcand, Xref, Zt, prior, Y=NULL, w=NULL, verb=1)
     badj <- 1 + diag(FF %*% util$Vb %*% t(FF))  ## could be simplified further
     
     ## ALC calculation for each entry in Xcand
-    alc <- calc.alcs(k, Xcand, pall$X, util$Ki, Xref, Zt$d, Zt$g,
+    alc <- calc.alcs(k, Xcand, PL.env$pall$X, util$Ki, Xref, Zt$d, Zt$g,
                      prior$s2p, util$phi, badj, tdf, w, verb)
 
     ## sanity checks
@@ -454,15 +460,15 @@ tquants <- function(tp)
 params.GP <- function()
   {
     ## allocate a data frame for the params
-    P <- length(peach)
+    P <- length(PL.env$peach)
     g <- lpost <- rep(NA, P)
-    d <- matrix(NA, ncol=length(peach[[1]]$d), nrow=P)
+    d <- matrix(NA, ncol=length(PL.env$peach[[1]]$d), nrow=P)
     
     ## collect the parameters from the particles
     for(p in 1:P) {
-      d[p,] <- peach[[p]]$d
-      g[p] <- peach[[p]]$g
-      lpost[p] <- peach[[p]]$lpost
+      d[p,] <- PL.env$peach[[p]]$d
+      g[p] <- PL.env$peach[[p]]$g
+      lpost[p] <- PL.env$peach[[p]]$lpost
     }
 
     ## return the particles
@@ -529,9 +535,9 @@ data.GP <- function(begin, end=NULL, X, Y)
 
 addpall.GP <- function(Z)
   {
-    pall$X <<- rbind(pall$X, Z$x)
-    pall$Y <<- c(pall$Y, Z$y)
-    pall$D <<- NULL
+    PL.env$pall$X <- rbind(PL.env$pall$X, Z$x)
+    PL.env$pall$Y <- c(PL.env$pall$Y, Z$y)
+    PL.env$pall$D <- NULL
   }
 
 
@@ -543,22 +549,22 @@ addpall.GP <- function(Z)
 util.GP <- function(Zt, prior, Y=NULL, sub=1:Zt$t, ldetK=FALSE, retKi=TRUE)
   {
     ## sanity check
-    if(!is.null(pall$Y) && Zt$t != sum(!is.na(pall$Y)))
-      stop("Zt$t and sum(!is.na(pall$Y)) mismatch")
-    else if(Zt$t != nrow(pall$X)) stop("Zt$t and nrow(pall$X) mismatch")
-    m <- ncol(pall$X)
+    if(!is.null(PL.env$pall$Y) && Zt$t != sum(!is.na(PL.env$pall$Y)))
+      stop("Zt$t and sum(!is.na(PL.env$pall$Y)) mismatch")
+    else if(Zt$t != nrow(PL.env$pall$X)) stop("Zt$t and nrow(PL.env$pall$X) mismatch")
+    m <- ncol(PL.env$pall$X)
 
     ## get the right X and Y
-    if(is.null(Y)) Y <- pall$Y
+    if(is.null(Y)) Y <- PL.env$pall$Y
     
     ## calculate the covariance matrix
     if(prior$cov == "isotropic") { ## isotropic
-      if(is.null(pall$D)) pall$D <<- distance(pall$X)
-      K <- dist2covar.symm(D=pall$D[sub,sub], d=Zt$d, g=Zt$g)
+      if(is.null(PL.env$pall$D)) PL.env$pall$D <- distance(PL.env$pall$X)
+      K <- dist2covar.symm(D=PL.env$pall$D[sub,sub], d=Zt$d, g=Zt$g)
     } else if(prior$cov == "separable") { ## separable
-      K <- covar.sep(X1=pall$X[sub,], d=Zt$d, g=Zt$g)
+      K <- covar.sep(X1=PL.env$pall$X[sub,], d=Zt$d, g=Zt$g)
     } else { ## sim (rank 1)
-      K <- covar.sim(X1=pall$X[sub,], d=Zt$d, g=Zt$g)      
+      K <- covar.sim(X1=PL.env$pall$X[sub,], d=Zt$d, g=Zt$g)      
     }
 
     ## Ki <- K^{-1}
@@ -567,7 +573,7 @@ util.GP <- function(Zt, prior, Y=NULL, sub=1:Zt$t, ldetK=FALSE, retKi=TRUE)
     ## calculate the weighted least squares part
     Y <- Y[sub]
     if(! prior$bZero) {
-      F <- cbind(1, pall$X[sub,])
+      F <- cbind(1, PL.env$pall$X[sub,])
       FtKi <- t(F) %*% Ki 
       Vb <- solve(FtKi %*% F)
       bmu <- Vb %*% (FtKi %*% Y)
@@ -586,10 +592,11 @@ util.GP <- function(Zt, prior, Y=NULL, sub=1:Zt$t, ldetK=FALSE, retKi=TRUE)
     else { YmFbmu <- Y }
 
     ## decide whether or not to return Ki
-    if(!retKi) Ki <- FALSE
+    if(!retKi) { Ki <- FALSE; condnum <- NULL }
+    else condnum <- kappa(Ki)
     
     ## return the list of quantities calculated
-    return(list(Vb=Vb, bmu=bmu, phi=phi, Ki=Ki, ldetK=ldetK, YmFbmu=YmFbmu))
+    return(list(Vb=Vb, bmu=bmu, phi=phi, Ki=Ki, condnum=condnum, ldetK=ldetK, YmFbmu=YmFbmu))
   }
 
 
@@ -619,7 +626,7 @@ ei.adapt <- function(Xcand, rect, prior, verb)
   {
     ## calculate the average maximum entropy point
     if(verb > 0)
-      cat("taking design point ", nrow(pall$X)+1, " by EI\n", sep="")
+      cat("taking design point ", nrow(PL.env$pall$X)+1, " by EI\n", sep="")
 
     ## stale candidates
     Xcands <- rectscale(Xcand, rect)
@@ -631,8 +638,8 @@ ei.adapt <- function(Xcand, rect, prior, verb)
     ei <- rep(0, nrow(as.matrix(Xcand)))
     for(p in 1:length(outp)) {
       fmin <- min(outp[[p]]$m)
-      ei <- ei + calc.eis(outp[[p]], fmin)
-      ## ei <- ei + apply(outp[[p]], 1, EI, fmin=fmin)
+      ei <- ei + calc.eis(outp[[p]][,1:3], fmin)
+      ## ei <- ei + apply(outp[[p]][,1:3], 1, EI, fmin=fmin)
     }
 
     ## return the candidate with the most potential
@@ -648,7 +655,7 @@ var.adapt <- function(Xcand, rect, prior, verb)
   {
     ## calculate the average maximum entropy point
     if(verb > 0)
-      cat("taking design point ", nrow(pall$X)+1, " by EI\n", sep="")
+      cat("taking design point ", nrow(PL.env$pall$X)+1, " by EI\n", sep="")
 
     ## stale candidates
     Xcands <- rectscale(Xcand, rect)
@@ -657,16 +664,17 @@ var.adapt <- function(Xcand, rect, prior, verb)
     outp <- papply(XX=Xcands, fun=pred.GP, prior=prior, verb=verb)
 
     ## gather the predictive variance info
-    m <- m2 <- v <- rep(0, nrow(as.matrix(Xcand)))
+    condnum <- m <- m2 <- v <- rep(0, nrow(as.matrix(Xcand)))
     for(p in 1:length(outp)) {
       m2 <- m2 + outp[[p]]$m^2
       m <- m + outp[[p]]$m
       v <- v + outp[[p]]$df*outp[[p]]$s2/(outp[[p]]$df - 2)
+      condnum <- condnum + outp[[p]]$condnum
     }
 
     ## return the candidate with the most potential
     n <- length(outp)
-    return(list(m=m/n, v=v/n + m2/n - (m/n)^2))
+    return(list(m=m/n, v=v/n + m2/n - (m/n)^2, condnum=condnum/n))
   }
 
 
@@ -680,7 +688,7 @@ ieci.adapt <- function(Xcand, rect, prior, verb, Xref=NULL, fun=ieci.GP)
   {
     ## calculate the average maximum entropy point
     if(verb > 0)
-      cat("taking design point ", nrow(pall$X)+1, " by IECI\n", sep="")
+      cat("taking design point ", nrow(PL.env$pall$X)+1, " by IECI\n", sep="")
 
     ## adjust the candidates (X) and reference locations (Xref)
     Xcands <- rectscale(Xcand, rect)
@@ -712,7 +720,7 @@ alc.adapt <- function(Xcand, rect, prior, verb, Xref=NULL, fun=alc.GP)
   {
     ## calculate the average maximum entropy point
     if(verb > 0)
-      cat("taking design point ", nrow(pall$X)+1, " by ALC\n", sep="")
+      cat("taking design point ", nrow(PL.env$pall$X)+1, " by ALC\n", sep="")
 
     ## adjust the candidates (X) and reference locations (Xref)
     Xcands <- rectscale(Xcand, rect)
@@ -745,7 +753,7 @@ mindist.adapt <- function(Xcand, rect, prior, verb, Xref)
   {
     ## calculate the average maximum entropy point
     if(verb > 0)
-      cat("taking design point ", nrow(pall$X)+1, " by mindist\n", sep="")
+      cat("taking design point ", nrow(PL.env$pall$X)+1, " by mindist\n", sep="")
 
     ## check Xref should be length 1
     if(nrow(Xref) != 1) stop("Xref should have one vector")
@@ -773,17 +781,17 @@ mindist.adapt <- function(Xcand, rect, prior, verb, Xref)
 ## AND ONE FOR LOCAL DESIGN WITH APLEY
 
 data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
-                           cands=40, save=TRUE, oracle=TRUE, verb=2)
+                           cands=40, save=TRUE, oracle=TRUE, verb=2, interp=interp.loess)
   {
     if(!is.null(end) && begin > end) stop("must have begin <= end")
     else if(is.null(end) || begin == end) { ## adaptive sample
 
       ## choose some adaptive sampling candidates
-      if(is.na(cands)) Xc <- Xcand
+      if(is.na(cands)) Xc <- PL.env$Xcand
       else Xc <- lhs(cands, rect)
 
       if(oracle) {  ## add a cleverly chosen candidate
-        xstars <- findmin.GP(pall$X[nrow(pall$X),], prior)
+        xstars <- findmin.GP(PL.env$pall$X[nrow(PL.env$pall$X),], prior)
         xstar <- drop(rectunscale(rbind(xstars), rect))
         Xc <- rbind(Xc, xstar)
       } else if(!is.null(formals(adapt)$Xref)) {
@@ -800,14 +808,14 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
       xs <- rectscale(x, rect)
 
       ## possibly remove the candidate from a fixed set
-      if(is.na(cands)) Xcand <<- Xcand[-indx,]
+      if(is.na(cands)) PL.env$Xcand <- PL.env$Xcand[-indx,]
       
       ## maybe plot something
       if(verb > 1) {
         par(mfrow=c(1,1))
-        if(ncol(Xc) > 1 && nrow(pall$X) > 10) { ## 2-d+ data
+        if(ncol(Xc) > 1 && nrow(PL.env$pall$X) > 10) { ## 2-d+ data
           image(interp(Xc[,1], Xc[,2], as), main="AS surface")
-          points(rectunscale(pall$X, rect))
+          points(rectunscale(PL.env$pall$X, rect))
           points(Xc, pch=18)
           if(oracle) points(xstar[1], xstar[2], pch=17, col="blue")
           points(x[,1], x[,2], pch=18, col="green")
@@ -815,7 +823,7 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
           o <- order(drop(Xc))
           plot(drop(Xc[o,]), as[o], type="l", lwd=2,
                xlab="x", ylab="AS stat", main="AS surface")
-          points(drop(rectunscale(pall$X, rect)), rep(min(as), nrow(pall$X)))
+          points(drop(rectunscale(PL.env$pall$X, rect)), rep(min(as), nrow(PL.env$pall$X)))
           points(x, min(as), pch=18, col="green")
           if(oracle) points(xstar, min(as), pch=17, col="blue")
           legend("topright", c("chosen point", "oracle candidate"),
@@ -825,12 +833,13 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
 
       ## maybe save the max log EI or IECI
       if(save) {
-        if(oracle) psave$xstar <<- rbind(psave$xstar, xstar)
+        if(oracle) PL.env$psave$xstar <- rbind(PL.env$psave$xstar, xstar)
         else if(!is.null(mv)) {
-          psave$vref <<- rbind(psave$vref, mv$v)
-          psave$mref <<- rbind(psave$mref, mv$m)
+          PL.env$psave$vref <- rbind(PL.env$psave$vref, mv$v)
+          PL.env$psave$mref <- rbind(PL.env$psave$mref, mv$m)
+          PL.env$psave$condnum <- rbind(PL.env$psave$condnum, mv$condnum)
         }
-        psave$max.as <<- c(psave$max.as, max(as))
+        PL.env$psave$max.as <- c(PL.env$psave$max.as, max(as))
       }
 
       ## return the adaptively chosen location
@@ -841,9 +850,9 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
       ## MED from a subset when cands is NULL, uses global Xcand
       if(is.na(cands)) {
         if(verb > 0) cat("initializing with size", end-begin+1, "MED\n")
-        out <- dopt.gp(end-begin+1, X=NULL, Xcand=Xcand)
+        out <- dopt.gp(end-begin+1, X=NULL, Xcand=PL.env$Xcand)
         X <- out$XX
-        Xcand <<- Xcand[-out$fi,]
+        PL.env$Xcand <- PL.env$Xcand[-out$fi,]
       }  else {  ## calculate a LHS 
         if(verb > 0) cat("initializing with size", end-begin+1, "LHS\n")
         X <- lhs(end-begin+1, rect)
@@ -864,17 +873,17 @@ data.GP.improv <- function(begin, end=NULL, f, rect, prior, adapt=ei.adapt,
 pred.mean.GP <- function(x, util, cov, dparam, gparam)
   {
     ## coerse the XX input
-    XX <- matrix(x, ncol=ncol(pall$X))
+    XX <- matrix(x, ncol=ncol(PL.env$pall$X))
 
     ## calculate covariance vectors and matrices
     if(cov == "isotropic") { ## isotropic
-      k <- covar(X1=pall$X, X2=XX, d=dparam, g=0)
+      k <- covar(X1=PL.env$pall$X, X2=XX, d=dparam, g=0)
       kk <- drop(covar(X1=XX, d=dparam, g=gparam))
     } else if(cov == "separable") { ## separable
-      k <- covar.sep(X1=pall$X, X2=XX, d=dparam, g=0)
+      k <- covar.sep(X1=PL.env$pall$X, X2=XX, d=dparam, g=0)
       kk <- drop(covar.sep(X1=XX, d=dparam, g=gparam))
     } else { ## sim (rank 1)
-      k <- covar.sim(X1=pall$X, X2=XX, d=dparam, g=0)
+      k <- covar.sim(X1=PL.env$pall$X, X2=XX, d=dparam, g=0)
       kk <- drop(covar.sim(X1=XX, d=dparam, g=gparam))
     }
     
@@ -903,11 +912,11 @@ getmap.GP <- function()
   {
     ## calculate the MAP particle
     mi <- 1
-    if(length(peach) > 1) {
-      for(p in 2:length(peach))
-        if(peach[[p]]$lpost > peach[[mi]]$lpost) mi <- p
+    if(length(PL.env$peach) > 1) {
+      for(p in 2:length(PL.env$peach))
+        if(PL.env$peach[[p]]$lpost > PL.env$peach[[mi]]$lpost) mi <- p
     }
-    return(peach[[mi]])
+    return(PL.env$peach[[mi]])
   }
 
 
@@ -921,10 +930,10 @@ findmin.GP <- function(xstart, prior)
     Zt <- getmap.GP()
     
     ## utility for calculations below
-    util <- util.GP(Zt, prior, pall$Y, retKi=TRUE)
+    util <- util.GP(Zt, prior, PL.env$pall$Y, retKi=TRUE)
 
     ## call the optim function
-    m <- ncol(pall$X)
+    m <- ncol(PL.env$pall$X)
     xstar <- optim(xstart, pred.mean.GP, method="L-BFGS-B",
                    lower=rep(0,m), upper=rep(1,m), util=util,
                    cov=prior$cov, dparam=Zt$d, gparam=Zt$g)$par
