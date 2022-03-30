@@ -53,10 +53,10 @@ papply(fun, verb = 1, pre = "", ...)
   Discussion Paper 2008-32, Duke University Dept. of Statistical
   Science.
 
-  \url{http://faculty.chicagobooth.edu/robert.gramacy/plgp.html}
+  \url{https://bobby.gramacy.com/r_packages/plgp/}
 }
 \author{
-Robert B. Gramacy, \email{rbgramacy@chicagobooth.edu}
+Robert B. Gramacy, \email{rbg@vt.edu}
 }
 \seealso{
   \code{\link{PL}}, \code{\link{pred.GP}}

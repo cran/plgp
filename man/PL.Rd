@@ -126,11 +126,15 @@ PL(dstream, start, end, init, lpredprob, propagate, prior = NULL,
   \emph{Bayesian Statistics 9}, J. M. Bernardo, M. J. Bayarri,
   J. O. Berger, A. P. Dawid, D. Heckerman, A. F. M. Smith and M. West
   (Eds.); Oxford University Press
+
+  Gramacy, R. (2020).
+  \dQuote{Surrogates: Gaussian Process Modeling, Design and Optimization for the Applied Sciences}.
+  Chapman Hall/CRC; \url{https://bobby.gramacy.com/surrogates/}
   
-  \url{http://faculty.chicagobooth.edu/robert.gramacy/plgp.html}
+  \url{https://bobby.gramacy.com/r_packages/plgp/}
 }
 \author{
-  Robert B. Gramacy, \email{rbgramacy@chicagobooth.edu}
+  Robert B. Gramacy, \email{rbg@vt.edu}
 }
 %\note{
 %%  ~~further notes~~

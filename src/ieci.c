@@ -506,14 +506,14 @@ void calc_iecis_R(double *ktKik_in, int *m_in, double *k_in, int *n_in,
 
     /* progress meter */
     if(*verb_in > 1)
-      myprintf(mystdout, "calculating ECI for point %d of %d\n", i, I);
+      MYprintf(MYstdout, "calculating ECI for point %d of %d\n", i, I);
     
     /* calculate the g vector, mui, and kxy */
     calc_g_mui_kxy(col, Xcand[i], X, n, Ki, Xref, m, d_in, 
 		   dlen, *g_in, gvec, &mui, kx, kxy);
 
     /* skip if numerical problems */
-    if(mui <= sqrt(DOUBLE_EPS)) {
+    if(mui <= sqrt(DBL_EPSILON)) {
       ieci_out[i] = 1e300 * 1e300;
       continue;
     }
@@ -596,14 +596,14 @@ void calc_alcs_R(int *m_in, double *k_in, int *n_in,
 
     /* progress meter */
     if(*verb_in > 1)
-      myprintf(mystdout, "calculating ALC for point %d of %d\n", i, I);
+      MYprintf(MYstdout, "calculating ALC for point %d of %d\n", i, I);
     
     /* calculate the g vector, mui, and kxy */
     calc_g_mui_kxy(col, Xcand[i], X, n, Ki, Xref, m, d_in, 
 		   dlen, *g_in, gvec, &mui, kx, kxy);
 
     /* skip if numerical problems */
-    if(mui <= sqrt(DOUBLE_EPS)) {
+    if(mui <= sqrt(DBL_EPSILON)) {
       alc_out[i] = 1e300 * 1e300;
       continue;
     }

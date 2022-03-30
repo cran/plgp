@@ -49,7 +49,7 @@ void covar(const int col, double **X1, const int n1, double **X2,
     for(j=0; j<n2; j++) {
       K[i][j] = 0.0;
       for(k=0; k<col; k++) K[i][j] += sq(X1[i][k] - X2[j][k]);
-      if(K[i][j] == 0.0) K[i][j] = 1.0 + g;
+      if(i == j && K[i][j] == 0.0) K[i][j] = 1.0 + g;
       else K[i][j] = exp(0.0 - K[i][j]/d);
     }
 }
@@ -73,7 +73,7 @@ void covar_sep(const int col, double **X1, const int n1, double **X2,
     for(j=0; j<n2; j++) {
       K[i][j] = 0.0;
       for(k=0; k<col; k++) K[i][j] += sq(X1[i][k] - X2[j][k])/d[k];
-      if(K[i][j] == 0.0) K[i][j] = 1.0 + g;
+      if(i == j && K[i][j] == 0.0) K[i][j] = 1.0 + g;
       else K[i][j] = exp(0.0 - K[i][j]);
     }
   }
@@ -98,7 +98,7 @@ void covar_sim(const int col, double **X1, const int n1, double **X2,
     for(j=0; j<n2; j++) {
       K[i][j] = 0.0;
       for(k=0; k<col; k++) K[i][j] += d[k] * (X1[i][k] - X2[j][k]);
-      if(K[i][j] == 0.0) K[i][j] = 1.0 + g;
+      if(i == j && K[i][j] == 0.0) K[i][j] = 1.0 + g;
       else K[i][j] = exp(0.0 - sq(K[i][j]));
     }
   }
@@ -278,7 +278,7 @@ void dist2covar_R(double *D_in, int *n1_in, int *n2_in, double *d_in,
   /* calculate the covariance */
   for(i=0; i<n1; i++)
     for(j=0; j<n2; j++) {
-      if(D[i][j] == 0) K[i][j] = 1.0 + g;
+      if(i == j && D[i][j] == 0) K[i][j] = 1.0 + g;
       else K[i][j] = exp(0.0 - D[i][j]/d);
     }
 

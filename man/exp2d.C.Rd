@@ -46,11 +46,15 @@ exp2d.C(X, threed = TRUE)
     sequential design and optimization.}
   Journal of Computational and Graphical Statistics, 20(1), 
   pp. 102-118; arXiv:0909.5262
+
+  Gramacy, R. (2020).
+  \dQuote{Surrogates: Gaussian Process Modeling, Design and Optimization for the Applied Sciences}.
+  Chapman Hall/CRC; \url{https://bobby.gramacy.com/surrogates/}
   
-  \url{http://faculty.chicagobooth.edu/robert.gramacy/plgp.html}
+  \url{https://bobby.gramacy.com/r_packages/plgp/}
 }
 \author{
-Robert B. Gramacy, \email{rbgramacy@chicagobooth.edu}
+Robert B. Gramacy, \email{rbg@vt.edu}
 }
 \examples{
 ## The following demos use this data

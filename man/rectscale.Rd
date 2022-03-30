@@ -28,10 +28,10 @@ rectunscale(X, rect)
   \code{X} scaled or un-scaled as appropriate
 }
 \author{
-  Robert B. Gramacy, \email{rbgramacy@chicagobooth.edu}
+  Robert B. Gramacy, \email{rbg@vt.edu}
 }
 \references{
-  \url{http://faculty.chicagobooth.edu/robert.gramacy/plgp.html}
+  \url{https://bobby.gramacy.com/r_packages/plgp/}
 }
 \examples{
 X <- matrix(runif(10, 1, 3), ncol=2)

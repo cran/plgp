@@ -1,5 +1,5 @@
 # Load the shared object
-useDynLib(plgp)
+useDynLib(plgp, .registration=TRUE)
 
 # Exports
 export(EI, data.GP, data.GP.improv, PL, dist2covar.symm, papply,
@@ -22,5 +22,10 @@ export(EI, data.GP, data.GP.improv, PL, dist2covar.symm, papply,
 
 # Import all packages listed as Imports or Depends
 import(mvtnorm, tgp)
+
+# specific built-ins
+importFrom("graphics", "hist", "image", "legend", "par", "points")
+importFrom("stats", "dexp", "dt", "dunif", "optim", "pt", "qt",
+     "rnorm", "rt", "runif")
 
 # no S3 methods

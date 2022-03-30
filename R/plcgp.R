@@ -181,7 +181,7 @@ init.CGP <- function(prior, d=NULL, g=NULL)
     ## check to make sure all classes are represented
     ## with a coding starting from one
     numclass <- length(unique(PL.env$pall$C))
-    if(any(PL.env$pall$C <= 0 || PL.env$pall$C > numclass))
+    if(any(PL.env$pall$C <= 0 | PL.env$pall$C > numclass))
       stop("PL.env$pall$C should range from 1 to numclass")
 
     ## default d ang if not specified
@@ -399,7 +399,7 @@ data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2, in
     else if(is.null(end) || begin == end) { ## adaptive sample
 
       ## choose some adaptive sampling candidates
-      if(class(cands) == "function") Xc <- cands()
+      if(inherits(cands, "function")) Xc <- cands()
       else if(is.na(cands)) Xc <- PL.env$Xcand
       else Xc <- lhs(cands, rect)
       ## Xc <- dopt.gp(n=cands, X=NULL, Xc=lhs(10*cands, rect))$XX
@@ -413,7 +413,7 @@ data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2, in
       xs <- rectscale(x, rect)
 
       ## possibly remove the candidate from a fixed set
-      if(class(cands) != "function" && is.na(cands)) PL.env$Xcand <- PL.env$Xcand[-indx,]
+      if(!inherits(cands, "function") && is.na(cands)) PL.env$Xcand <- PL.env$Xcand[-indx,]
       
       ## maybe plot something
       if(verb > 1) {
@@ -434,13 +434,13 @@ data.CGP.adapt <- function(begin, end=NULL, f, rect, prior, cands=40, verb=2, in
       ## if(verb > 0) cat("initializing with size", end-begin+1, "LHS\n")
       if(verb > 0) cat("initializing with size", end-begin+1, "MES\n")
       ## X <- lhs(end-begin+1, rect)
-      if(class(cands) != "function" && is.na(cands)) Xc <- PL.env$Xcand
+      if(!inherits(class, "function") && is.na(cands)) Xc <- PL.env$Xcand
       else Xc <- lhs(10*(end-begin+1), rect)
       out <- dopt.gp(end-begin+1, X=NULL, Xcand=Xc)
       X <- out$XX
 
        ## possibly remove the candidate from a fixed set
-      if(class(cands) != "function" && is.na(cands)) PL.env$Xcand <- PL.env$Xcand[-out$fi,]
+      if(!inherits(class, "function") && is.na(cands)) PL.env$Xcand <- PL.env$Xcand[-out$fi,]
       
       ## get the class labels
       fX <- f(X)

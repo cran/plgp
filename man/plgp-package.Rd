@@ -24,7 +24,7 @@ For a fuller overview including a complete list of functions, and
 demos, please use \code{help(package="plgp")}.
 }
 \author{
-Robert B. Gramacy \email{rbgramacy@chicagobooth.edu}
+Robert B. Gramacy \email{rbg@vt.edu}
 }
 \references{
   
@@ -45,7 +45,11 @@ Robert B. Gramacy \email{rbgramacy@chicagobooth.edu}
   Discussion Paper 2008-32, Duke University Dept. of Statistical
   Science.
 
-  \url{http://faculty.chicagobooth.edu/robert.gramacy/plgp.html}
+  Gramacy, R. (2020).
+  \dQuote{Surrogates: Gaussian Process Modeling, Design and Optimization for the Applied Sciences}.
+  Chapman Hall/CRC; \url{https://bobby.gramacy.com/surrogates/}
+
+  \url{https://bobby.gramacy.com/r_packages/plgp/}
 }
 \keyword{ package }
 \seealso{ \code{\link{PL}}, \pkg{tgp} }
