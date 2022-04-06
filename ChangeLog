@@ -1,3 +1,16 @@
+1.1-9 (02 Apr 2022)
+-----
+
+updates for USE_FC_LEN in BLAS
+
+
+1.1-8 (28 Mar 2022)
+-----
+
+updated contact info to VT and changed DOUBLE
+constats as per Ripley
+
+
 1.1-7 (27 Nov 2014)
 -----
 

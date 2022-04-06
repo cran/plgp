@@ -1,5 +1,5 @@
-2b85f3ab64e8aa0dc7cf43a7201b409e *ChangeLog
-d3410f95a061e95e90fd9c1c609f24d5 *DESCRIPTION
+952e08d2f0792c93fc3767cd95130cc8 *ChangeLog
+6ea8d269ecf95a52cb087fc511f57b9f *DESCRIPTION
 9587b3b95b879b78b33e7885ab97635d *NAMESPACE
 9a0346956c0de9a27126057c0538df71 *R/covar.R
 58b3fba028ac3a3fac56d2df38cdcc8d *R/entropy.R
@@ -37,10 +37,10 @@ cf35cba158679eae9f02e8413125f675 *man/propagate.GP.Rd
 3c6def43e09f2c8064f2351975b39b73 *src/covar.c
 623a1e4c10398dfb3657002caa2d0fa3 *src/entropy.c
 eb99d97500a83eb71b3b2c3987689fd8 *src/ieci.c
-f42a23825e83c9bb1bf61cbc054d070a *src/linalg.c
-c9cce2c24568995b9a9a6cdd5a723a1e *src/linalg.h
+e90480ffa1bad9428d4c296e9e21b776 *src/linalg.c
+34bb5ea52a0789339e46df5bf45badce *src/linalg.h
 d2dec33f02d84e520ab19ea647ea7642 *src/matrix.c
 82a72086e29c44601a675e129bea5401 *src/matrix.h
 da0f664f67a886b3d4df801d88741311 *src/plgp_init.c
 566af35ef5275604911cef5092623510 *src/rhelp.c
-9cacb9b308ea77b24d09f5fd69b08726 *src/rhelp.h
+dae29d1025761366517b56cb7db0e08f *src/rhelp.h
