@@ -1,5 +1,5 @@
-952e08d2f0792c93fc3767cd95130cc8 *ChangeLog
-6ea8d269ecf95a52cb087fc511f57b9f *DESCRIPTION
+66f4b08e731d2b1c0cb561dd5ac0a0ae *ChangeLog
+02134424ff2724231c502ac139a87dd2 *DESCRIPTION
 9587b3b95b879b78b33e7885ab97635d *NAMESPACE
 9a0346956c0de9a27126057c0538df71 *R/covar.R
 58b3fba028ac3a3fac56d2df38cdcc8d *R/entropy.R
@@ -26,7 +26,7 @@ a54ba6fcb89d68791b2d3b391c0ae9b9 *man/draw.GP.Rd
 d1bc275cc0fb19109dcfcfb3cf0c53f2 *man/init.GP.Rd
 50a4596974744ea76a611b72263e012e *man/lpredprob.GP.Rd
 e04caaf5d7999d060af83539d949fccb *man/papply.Rd
-5468456fad202c1a6644712147a907df *man/params.GP.Rd
+0b1434a438ea0f90be75c45de00be055 *man/params.GP.Rd
 8913e75d166c0154ba0c55f0d1f39520 *man/plgp-internal.Rd
 20493815563d3e183e189ca00b92c792 *man/plgp-package.Rd
 29c650c03f7a169487f1a25212514fe8 *man/pred.GP.Rd

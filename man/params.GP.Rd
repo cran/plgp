@@ -49,7 +49,7 @@ params.ConstGP()
   \url{https://bobby.gramacy.com/r_packages/plgp/}
 }
 \author{
-Robert B. Gramacy, \email{https://bobby.gramacy.com/r_packages/plgp/}
+Robert B. Gramacy, \email{rbg@vt.edu}
 }
 \seealso{
   \code{\link{PL}}, \code{\link{lpredprob.GP}},
