@@ -5,7 +5,7 @@
 ## load the plgp library
 library(plgp)
 library(tgp)
-library(akima)
+library(interp)
 
 ## close down old graphics windows and clear session
 graphics.off()
@@ -27,8 +27,8 @@ formals(data.GP.improv)$oracle <- FALSE
 ## use a small LHS candidate set
 formals(data.GP.improv)$cands <- 100
 
-## use akima for interp
-library(akima)
+## use interp for interp
+library(interp)
 formals(data.GP.improv)$interp <- interp
 
 ## set up start and end times

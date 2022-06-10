@@ -3,7 +3,7 @@
 
 ## load the necessary libraries
 library(tgp)
-library(akima)
+library(interp)
 library(MASS)
 library(plgp)
 

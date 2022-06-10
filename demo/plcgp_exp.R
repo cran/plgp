@@ -4,7 +4,7 @@
 ## load the necessary libraries
 library(plgp)
 library(tgp)
-library(akima)
+library(interp)
 
 ## close down old graphics windows and clear session
 graphics.off()

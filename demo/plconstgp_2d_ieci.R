@@ -5,7 +5,7 @@
 ## load the plgp library
 library(plgp)
 library(tgp)
-library(akima)
+library(interp)
 library(ellipse)
 library(splancs)
 
@@ -58,8 +58,8 @@ formals(data.ConstGP.improv)$prior <- prior
 ## set up the IECI adaptive sampling protocol
 formals(data.ConstGP.improv)$cands <- 100
 
-## use akima for interp
-library(akima)
+## use interp for interp
+library(interp)
 formals(data.ConstGP.improv)$interp <- interp
 
 ## set up the start and end times

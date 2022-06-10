@@ -93,8 +93,8 @@ data.ConstGP.improv(begin, end = NULL, f, rect, prior,
  \item{interp}{
     function for smoothing of 2-d image plots.  The default comes
     from \code{\link[tgp]{interp.loess}}, but what works best is
-    \code{\link[akima]{interp}} which requires the \pkg{akima}
-    package
+    \code{\link[interp]{interp}} which requires the \pkg{interp} or
+    \pkg{akima} package
  }
 }
 \details{

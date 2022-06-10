@@ -4,7 +4,7 @@
 ## load the plgp library
 library(plgp)
 library(tgp)
-library(akima)
+library(interp)
 
 ## close down old graphics windows and clear session
 graphics.off()
@@ -25,8 +25,8 @@ formals(data.CGP.adapt)$cands <- NA
 prior <- prior.CGP(2, "separable")
 formals(data.CGP.adapt)$prior <- prior
 
-## use akima
-library(akima)
+## use interp
+library(interp)
 formals(data.CGP.adapt)$interp <- interp
 
 ## start and end
