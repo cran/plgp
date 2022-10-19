@@ -1,5 +1,5 @@
-9c7347235389b3de0a213ad857c56da2 *ChangeLog
-7d12473e3ccbfb1eb839ba35426ed440 *DESCRIPTION
+c2ea6d402d0efaf2a33dc3c1afd4722e *ChangeLog
+53b2b3499c5f3c241af26012a8d203db *DESCRIPTION
 9587b3b95b879b78b33e7885ab97635d *NAMESPACE
 9a0346956c0de9a27126057c0538df71 *R/covar.R
 58b3fba028ac3a3fac56d2df38cdcc8d *R/entropy.R
@@ -37,7 +37,7 @@ cf35cba158679eae9f02e8413125f675 *man/propagate.GP.Rd
 3c6def43e09f2c8064f2351975b39b73 *src/covar.c
 623a1e4c10398dfb3657002caa2d0fa3 *src/entropy.c
 eb99d97500a83eb71b3b2c3987689fd8 *src/ieci.c
-e90480ffa1bad9428d4c296e9e21b776 *src/linalg.c
+ba9736dcffd4a8a31474ffef8593725a *src/linalg.c
 34bb5ea52a0789339e46df5bf45badce *src/linalg.h
 d2dec33f02d84e520ab19ea647ea7642 *src/matrix.c
 82a72086e29c44601a675e129bea5401 *src/matrix.h
